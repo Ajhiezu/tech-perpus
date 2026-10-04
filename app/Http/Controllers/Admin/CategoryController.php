@@ -22,6 +22,10 @@ class CategoryController extends Controller
         return view('admin.categories.index', compact('categories'));
     }
 
+    public function create()
+    {
+        return view('admin.categories.create');
+    }
 
     public function store(Request $request)
     {
@@ -34,6 +38,31 @@ class CategoryController extends Controller
         Category::create($validated);
 
         return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil ditambahkan!');
+    }
+
+    public function show(Category $category, Request $request)
+    {
+        $search = $request->input('search');
+        
+        $books = $category->books()
+            ->with(['location', 'category'])
+            ->when($search, function($query) use ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('title', 'LIKE', "%{$search}%")
+                      ->orWhere('author', 'LIKE', "%{$search}%")
+                      ->orWhere('isbn', 'LIKE', "%{$search}%")
+                      ->orWhere('book_code', 'LIKE', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10);
+            
+        return view('admin.categories.show', compact('category', 'books'));
+    }
+
+    public function edit(Category $category)
+    {
+        return view('admin.categories.edit', compact('category'));
     }
 
     public function update(Request $request, Category $category)
@@ -52,7 +81,7 @@ class CategoryController extends Controller
     public function destroy(Category $category)
     {
         if ($category->books()->count() > 0) {
-            return redirect()->back()->with('error', 'Kategori tidak dapat dihapus karena masih memiliki buku.');
+            return redirect()->back()->with('error', 'Kategori "'.$category->name.'" tidak dapat dihapus karena masih terhubung dengan '.$category->books()->count().' koleksi buku.');
         }
 
         $category->delete();

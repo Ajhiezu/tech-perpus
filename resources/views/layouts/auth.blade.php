@@ -3,9 +3,13 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ $title ?? 'Auth' }} - {{ config('app.name', 'TechPerpus') }}</title>
+        <title>{{ $title ?? 'Autentikasi' }} — RPK PUSTAKA IMM SAINTEK MU</title>
         
-        <!-- Fonts -->
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="{{ asset('images/logo-rpk.ico') }}">
+        <link rel="shortcut icon" type="image/x-icon" href="{{ asset('images/logo-rpk.ico') }}">
+
+        <!-- Fonts: Inter Sans-Serif System -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,38 +19,63 @@
 
         <style>
             [x-cloak] { display: none !important; }
+            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+            .font-serif { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         </style>
     </head>
-    <body class="antialiased font-sans bg-bg-main selection:bg-primary/10 selection:text-primary">
-        <div class="min-h-screen flex flex-col md:flex-row shadow-2xl overflow-hidden">
-            <!-- Brand Side -->
-            <div class="hidden md:flex md:w-1/2 bg-slate-900 items-center justify-center p-20 relative overflow-hidden">
-                <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-primary/20 to-transparent"></div>
-                <div class="absolute top-0 right-0 w-96 h-96 bg-indigo-600 rounded-full blur-[150px] opacity-10 -mr-48 -mt-48"></div>
+    <body class="antialiased bg-white text-neutral-dark selection:bg-primary/10 selection:text-primary">
+        <div class="min-h-screen flex flex-col md:flex-row bg-white">
+            <!-- Scholarly Brand Showcase Side (Red Background + White Text, Original Proportions) -->
+            <div class="hidden md:flex md:w-1/2 bg-[#C62828] text-white flex-col justify-between p-16 relative overflow-hidden">
+                <!-- Top Institution Title with official RPK PUSTAKA IMM SAINTEK MU logo -->
+                <div class="relative z-10">
+                    <a href="{{ url('/') }}" class="inline-flex items-center space-x-3.5 group">
+                        <div class="bg-white p-2 rounded-lg shadow-sm flex items-center justify-center shrink-0">
+                            <img src="{{ asset('images/logo-rpk.png') }}" alt="RPK PUSTAKA IMM SAINTEK MU" class="h-12 w-auto object-contain">
+                        </div>
+                        <div>
+                            <span class="font-sans text-xl font-bold tracking-tight text-white block leading-none">RPK PUSTAKA</span>
+                            <span class="text-[10px] uppercase tracking-wider text-white/90 font-semibold block mt-1.5">IMM SAINTEK MU</span>
+                        </div>
+                    </a>
+                </div>
                 
-                <div class="relative z-10 text-center max-w-sm">
-                    <div class="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center shadow-2xl mx-auto mb-12 shadow-primary/20">
-                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                <!-- Middle Quote with subtle gold detail -->
+                <div class="relative z-10 max-w-md my-auto py-12">
+                    <div class="flex items-center gap-2 mb-4">
+                        <!-- Small Gold Star Accent from Logo -->
+                        <svg class="w-4 h-4 text-accent fill-current" viewBox="0 0 24 24">
+                            <path d="M12 2l2.4 7.2h7.6l-6.2 4.5 2.4 7.3-6.2-4.6-6.2 4.6 2.4-7.3-6.2-4.5h7.6z"/>
+                        </svg>
+                        <span class="text-xs font-semibold text-white tracking-wider uppercase">Membuka Gerbang Pengetahuan</span>
                     </div>
-                    <h2 class="text-4xl font-extrabold text-white mb-6 tracking-tight">The Future of <span class="text-primary">Digital Literacy.</span></h2>
-                    <p class="text-slate-400 text-lg leading-relaxed font-medium">
-                        Seamlessly manage collections and access knowledge with our integrated SaaS ecosystem.
+                    <blockquote class="font-sans text-2xl lg:text-3xl text-white leading-snug font-bold mb-6">
+                        "Perpustakaan adalah ruang hening tempat pemikiran agung bertemu dengan mereka yang mencari kebenaran."
+                    </blockquote>
+                    <p class="text-sm sm:text-base text-white/90 leading-relaxed">
+                        Akses ribuan naskah ilmiah, literatur referensi, dan fasilitas reservasi sirkulasi digital secara mandiri.
                     </p>
                 </div>
                 
-                <div class="absolute bottom-12 text-slate-500 text-[10px] font-black uppercase tracking-[0.4em]">
-                    &copy; 2026 TechPerpus Ecosystem
+                <!-- Bottom Scholarly Meta -->
+                <div class="relative z-10 flex items-center justify-between text-xs text-white/75 tracking-wide uppercase font-semibold border-t border-white/20 pt-6">
+                    <span>&copy; {{ date('Y') }} RPK PUSTAKA IMM SAINTEK MU</span>
+                    <span class="text-white font-medium">Koleksi & Sirkulasi Terpadu</span>
                 </div>
             </div>
 
             <!-- Form Side -->
-            <div class="flex-1 flex items-center justify-center p-8 sm:p-12 md:p-32 bg-white">
-                <div class="w-full max-w-sm animate-in fade-in slide-in-from-right-4 duration-700">
-                    <div class="mb-12 flex items-center space-x-2 md:hidden">
-                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                        </div>
-                        <span class="text-xl font-bold tracking-tight">TechPerpus</span>
+            <div class="flex-1 flex items-center justify-center p-8 sm:p-14 md:p-20 bg-white">
+                <div class="w-full max-w-md">
+                    <!-- Mobile Logo -->
+                    <div class="mb-10 flex items-center space-x-3 md:hidden">
+                        <a href="{{ url('/') }}" class="inline-flex items-center space-x-3">
+                            <img src="{{ asset('images/logo-rpk.png') }}" alt="RPK PUSTAKA IMM SAINTEK MU" class="h-10 w-auto object-contain">
+                            <div>
+                                <span class="font-sans text-lg font-bold text-neutral-dark block leading-none">RPK PUSTAKA</span>
+                                <span class="text-[10px] uppercase tracking-wider text-primary font-semibold">IMM SAINTEK MU</span>
+                            </div>
+                        </a>
                     </div>
                     
                     @yield('content')

@@ -43,7 +43,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:admin,staff,member'],
+            'role' => ['required', 'in:admin,anggota'],
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
         ]);
@@ -70,7 +70,7 @@ class UserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,'.$user->id],
-            'role' => ['required', 'in:admin,staff,member'],
+            'role' => ['required', 'in:admin,anggota'],
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
@@ -97,6 +97,16 @@ class UserController extends Controller
     {
         if ($user->id === auth()->id()) {
             return redirect()->back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+        }
+
+        // Cegah penghapusan jika anggota masih memiliki peminjaman aktif
+        if ($user->loans()->where('status', 'borrowed')->exists()) {
+            return redirect()->back()->with('error', 'Pengguna "'.$user->name.'" tidak dapat dihapus karena masih memiliki peminjaman buku yang aktif.');
+        }
+
+        // Cegah penghapusan jika memiliki riwayat transaksi sirkulasi
+        if ($user->loans()->exists()) {
+            return redirect()->back()->with('error', 'Pengguna "'.$user->name.'" tidak dapat dihapus karena memiliki riwayat data transaksi sirkulasi peminjaman.');
         }
 
         $user->delete();

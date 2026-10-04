@@ -1,59 +1,82 @@
 <x-app-layout>
-    <x-slot name="header">Riwayat Aktivitas</x-slot>
+    <x-slot name="header">
+        Log Aktivitas & Riwayat Sirkulasi
+    </x-slot>
 
-    <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div class="space-y-6 animate-in fade-in duration-300">
+        <div class="space-y-1">
+            <span class="text-xs uppercase tracking-[0.2em] font-semibold text-primary block">Buku Catatan Digital</span>
+            <h2 class="font-serif text-2xl font-normal text-neutral-dark tracking-tight">Kronologi Aktivitas Sistem</h2>
+            <p class="text-xs sm:text-sm text-neutral-body">Rekaman kronologis setiap pengajuan peminjaman, pengembalian, dan sirkulasi koleksi RPK PUSTAKA IMM SAINTEK MU.</p>
+        </div>
+
         <x-card>
-            <x-slot name="header">Aktivitas Terbaru</x-slot>
+            <x-slot name="header">Daftar Rekam Jejak Sirkulasi</x-slot>
 
-            <div class="space-y-4">
+            <div class="space-y-3">
                 @forelse($activities as $loan)
-                    <div class="flex items-start space-x-4 p-4 bg-slate-50 border border-slate-100 rounded-xl hover:shadow-sm transition-all group">
+                    <div class="flex items-start space-x-4 p-4 bg-[#F8F8F7] border border-neutral-border rounded-md hover:border-primary/50 transition-all">
                         <div @class([
-                            'w-10 h-10 rounded-lg flex items-center justify-center text-white shrink-0',
-                            'bg-indigo-500' => $loan->status === 'borrowed',
-                            'bg-emerald-500' => $loan->status === 'returned',
-                            'bg-rose-500' => $loan->status === 'overdue',
+                            'w-9 h-9 rounded-md flex items-center justify-center shrink-0 border text-xs font-bold font-serif',
+                            'bg-primary-light text-primary border-red-200' => $loan->status === 'borrowed',
+                            'bg-green-50 text-success border-green-200' => $loan->status === 'returned',
+                            'bg-red-50 text-danger border-red-200' => $loan->status === 'overdue',
                         ])>
                             @if($loan->status === 'borrowed')
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             @elseif($loan->status === 'returned')
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                             @else
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             @endif
                         </div>
+
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-slate-900">
-                                <span class="font-bold text-indigo-600">{{ $loan->user->name }}</span>
-                                @if($loan->status === 'borrowed')
-                                    memesan buku
-                                @elseif($loan->status === 'returned')
-                                    mengembalikan buku
-                                @else
-                                    terlambat mengembalikan buku
-                                @endif
-                            </p>
-                            <div class="mt-1 flex items-center space-x-2 text-xs text-slate-500">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <p class="text-xs sm:text-sm font-medium text-neutral-dark">
+                                    <span class="font-semibold text-primary">{{ $loan->user->name }}</span>
+                                    @if($loan->status === 'borrowed')
+                                        mengajukan peminjaman buku
+                                    @elseif($loan->status === 'returned')
+                                        telah mengembalikan buku ke rak
+                                    @else
+                                        tercatat melewati batas waktu pengembalian
+                                    @endif
+                                </p>
+                                <span class="text-[10px] text-neutral-muted italic shrink-0">
+                                    {{ $loan->created_at->diffForHumans() }}
+                                </span>
+                            </div>
+
+                            <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                 @foreach($loan->loanDetails as $detail)
-                                    <span class="bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-600 truncate max-w-[200px]">{{ $detail->book->title }}</span>
+                                    <span class="bg-white border border-neutral-border px-2.5 py-0.5 rounded text-xs text-neutral-dark font-medium truncate max-w-[240px]">
+                                        {{ $detail->book->title }}
+                                    </span>
                                 @endforeach
                             </div>
-                            <div class="mt-2 text-[10px] text-slate-400 font-medium uppercase tracking-widest flex items-center space-x-3">
-                                <span>{{ $loan->created_at->diffForHumans() }}</span>
+
+                            <div class="mt-2.5 text-[10px] text-neutral-muted font-semibold uppercase tracking-wider flex items-center space-x-3">
+                                <span class="font-mono">ID Transaksi: #{{ $loan->id }}</span>
                                 <span>•</span>
-                                <span>ID: #{{ $loan->id }}</span>
+                                <span class="font-mono">{{ $loan->loan_code }}</span>
                                 @if($loan->fine_amount > 0)
-                                    <span class="text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded">Denda: Rp {{ number_format($loan->fine_amount) }}</span>
+                                    <span>•</span>
+                                    <span class="text-danger font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                                        Denda: Rp {{ number_format($loan->fine_amount) }}
+                                    </span>
                                 @endif
                             </div>
                         </div>
                     </div>
                 @empty
-                    <div class="py-12 text-center text-slate-400 italic">Belum ada aktivitas tercatat.</div>
+                    <div class="py-12 text-center text-xs text-neutral-muted italic">
+                        Belum ada riwayat aktivitas sirkulasi yang tercatat.
+                    </div>
                 @endforelse
             </div>
 
-            <div class="mt-8">
+            <div class="mt-8 pt-4 border-t border-neutral-border">
                 {{ $activities->links() }}
             </div>
         </x-card>

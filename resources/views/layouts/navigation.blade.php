@@ -19,7 +19,7 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
-                    @if(Auth::user()->isAdmin() || Auth::user()->isStaff())
+                    @if(Auth::user()->isAdmin())
                         <x-nav-link :href="route('admin.books.index')" :active="request()->routeIs('admin.books.*')" class="text-xs font-bold uppercase tracking-widest">
                             {{ __('Buku') }}
                         </x-nav-link>
@@ -29,16 +29,16 @@
                         <x-nav-link :href="route('admin.locations.index')" :active="request()->routeIs('admin.locations.*')" class="text-xs font-bold uppercase tracking-widest">
                             {{ __('Rak') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('staff.loans.index')" :active="request()->routeIs('staff.loans.*')" class="text-xs font-bold uppercase tracking-widest">
+                        <x-nav-link :href="route('admin.loans.index')" :active="request()->routeIs('admin.loans.*')" class="text-xs font-bold uppercase tracking-widest">
                             {{ __('Pinjaman') }}
                         </x-nav-link>
                     @endif
 
-                    @if(Auth::user()->isMember())
-                        <x-nav-link :href="route('member.books.index')" :active="request()->routeIs('member.books.*')" class="text-xs font-bold uppercase tracking-widest">
+                    @if(Auth::user()->isAnggota())
+                        <x-nav-link :href="route('anggota.books.index')" :active="request()->routeIs('anggota.books.*', 'member.books.*')" class="text-xs font-bold uppercase tracking-widest">
                             {{ __('Katalog Buku') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('member.loans.index')" :active="request()->routeIs('member.loans.*')" class="text-xs font-bold uppercase tracking-widest">
+                        <x-nav-link :href="route('anggota.loans.index')" :active="request()->routeIs('anggota.loans.*', 'member.loans.*')" class="text-xs font-bold uppercase tracking-widest">
                             {{ __('Status Pinjam') }}
                         </x-nav-link>
                     @endif

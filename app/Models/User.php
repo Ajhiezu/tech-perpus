@@ -21,6 +21,8 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'google_id',
+        'avatar',
         'password',
         'role',
         'phone',
@@ -42,14 +44,32 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
-    public function isStaff(): bool
+    public function isAnggota(): bool
     {
-        return $this->role === 'staff';
+        return $this->role === 'anggota';
     }
 
+    /**
+     * Backward-compatible alias for isAnggota()
+     */
     public function isMember(): bool
     {
-        return $this->role === 'member';
+        return $this->isAnggota();
+    }
+
+    public function loans(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Loan::class);
+    }
+
+    public function articles(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Article::class);
+    }
+
+    public function essays(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Essay::class);
     }
 
     /**

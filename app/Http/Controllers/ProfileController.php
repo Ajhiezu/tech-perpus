@@ -42,11 +42,23 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if ($user->isAdmin()) {
+            return Redirect::route('profile.edit')->with('error', 'Akun Administrator Utama tidak dapat dihapus secara mandiri demi menjaga integritas sistem.');
+        }
+
+        if ($user->loans()->where('status', 'borrowed')->exists()) {
+            return Redirect::route('profile.edit')->with('error', 'Akun tidak dapat dihapus karena Anda masih memiliki peminjaman buku yang aktif.');
+        }
+
+        if ($user->loans()->exists()) {
+            return Redirect::route('profile.edit')->with('error', 'Akun tidak dapat dihapus karena masih terikat riwayat data transaksi sirkulasi peminjaman perpustakaan.');
+        }
+
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
         ]);
-
-        $user = $request->user();
 
         Auth::logout();
 

@@ -15,7 +15,14 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!$request->user() || !in_array($request->user()->role, $roles)) {
+        if (!$request->user()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        // Map 'member' to 'anggota' for backward compatibility
+        $normalizedRoles = array_map(fn($r) => $r === 'member' ? 'anggota' : $r, $roles);
+
+        if (!in_array($request->user()->role, $normalizedRoles)) {
             abort(403, 'Unauthorized access.');
         }
 

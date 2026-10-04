@@ -12,8 +12,8 @@ class ActivityController extends Controller
     {
         $user = Auth::user();
         
-        if ($user->isAdmin() || $user->isStaff()) {
-            // Admin/Staff see all activities
+        if ($user->isAdmin()) {
+            // Admin sees all activities
             $activities = Loan::with(['user', 'loanDetails.book'])
                 ->latest()
                 ->paginate(15);

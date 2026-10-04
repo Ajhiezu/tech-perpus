@@ -2,16 +2,16 @@
 
 <div>
     @if($label)
-        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 px-1">
+        <label class="block text-xs font-semibold text-[#666666] uppercase tracking-wider mb-2 px-0.5">
             {{ $label }}
         </label>
     @endif
 
     <div class="relative">
-        <input {{ $disabled ? 'disabled' : '' }} {!! $attributes->merge(['class' => 'w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all smooth disabled:opacity-50']) !!}>
+        <input {{ $disabled ? 'disabled' : '' }} {!! $attributes->merge(['class' => 'w-full px-3.5 py-2.5 bg-white border border-neutral-border rounded-md text-sm font-normal text-neutral-dark placeholder:text-neutral-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-50 disabled:bg-[#F8F8F7] shadow-xs']) !!}>
     </div>
 
     @if($error)
-        <p class="mt-2 text-xs font-semibold text-rose-500 px-1">{{ $error }}</p>
+        <p class="mt-1.5 text-xs font-medium text-danger px-0.5">{{ $error }}</p>
     @endif
 </div>

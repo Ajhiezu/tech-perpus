@@ -42,12 +42,12 @@ class LoansExport implements FromCollection, WithHeadings, WithMapping
     public function map($loan): array
     {
         return [
-            $loan->id,
+            $loan->loan_code ?? '#'.$loan->id,
             $loan->user->name,
             $loan->loanDetails->map(fn($d) => $d->book->title)->implode(', '),
-            $loan->loan_date,
-            $loan->due_date,
-            $loan->return_date ?? '-',
+            $loan->loan_date ? \Carbon\Carbon::parse($loan->loan_date)->format('d/m/Y') : '-',
+            $loan->due_date ? \Carbon\Carbon::parse($loan->due_date)->format('d/m/Y') : '-',
+            $loan->return_date ? \Carbon\Carbon::parse($loan->return_date)->format('d/m/Y') : '-',
             $loan->fine_amount ?? 0,
             strtoupper($loan->status),
         ];

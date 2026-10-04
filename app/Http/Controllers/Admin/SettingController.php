@@ -18,6 +18,8 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'late_fine_per_day' => 'required|numeric|min:0',
+            'digital_loan_duration_days' => 'required|integer|min:1|max:90',
+            'physical_loan_duration_days' => 'required|integer|min:1|max:90',
         ]);
 
         foreach ($validated as $key => $value) {

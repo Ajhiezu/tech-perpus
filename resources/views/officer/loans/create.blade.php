@@ -1,63 +1,78 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-bold text-2xl text-gray-800 leading-tight">
-            {{ __('Catat Peminjaman Baru') }}
-        </h2>
+        Pencatatan Peminjaman Koleksi
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-2xl border border-gray-100 p-8">
-                <form action="{{ route('staff.loans.store') }}" method="POST">
-                    @csrf
-                    
-                    <div class="mb-8">
-                        <label for="user_id" class="block text-sm font-bold text-gray-700 uppercase mb-2">Pilih Peminjam (Member/Staff)</label>
-                        <select name="user_id" id="user_id" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm">
-                            <option value="">-- Pilih Peminjam --</option>
-                            @foreach($borrowers as $borrower)
-                                <option value="{{ $borrower->id }}">
-                                    {{ $borrower->name }} ({{ $borrower->email }}) — {{ strtoupper($borrower->role) }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('user_id')" class="mt-2" />
-                    </div>
+    <div class="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-300">
+        <div>
+            <a href="{{ route('admin.loans.index') }}" 
+               class="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-neutral-muted hover:text-primary transition-colors">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Kembali ke Daftar Transaksi
+            </a>
+        </div>
 
+        <x-card>
+            <x-slot name="header">Formulir Sirkulasi Peminjaman Baru</x-slot>
 
-                    <div class="mb-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                        <label for="due_date" class="block text-sm font-bold text-slate-700 uppercase mb-2">Batas Waktu Pengembalian</label>
-                        <input type="date" name="due_date" id="due_date" required 
-                            min="{{ now()->addDay()->toDateString() }}" 
-                            max="{{ now()->addDays(14)->toDateString() }}"
-                            value="{{ now()->addDays(7)->toDateString() }}"
-                            class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm font-bold text-slate-700">
-                        <p class="mt-2 text-[10px] text-slate-400 font-medium italic">* Default peminjaman adalah 7 hari. Maksimal 14 hari.</p>
-                        <x-input-error :messages="$errors->get('due_date')" class="mt-2" />
-                    </div>
+            <form action="{{ route('admin.loans.store') }}" method="POST" class="space-y-6">
+                @csrf
+                
+                <div>
+                    <label for="user_id" class="block text-xs font-semibold text-neutral-body uppercase tracking-wider mb-2 px-0.5">
+                        Pilih Anggota Peminjam
+                    </label>
+                    <select name="user_id" id="user_id" required
+                        class="w-full px-3.5 py-2.5 bg-white border border-neutral-border rounded-md text-sm text-neutral-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs">
+                        <option value="">-- Pilih Anggota / Peminjam Terdaftar --</option>
+                        @foreach($borrowers as $borrower)
+                            <option value="{{ $borrower->id }}" {{ old('user_id') == $borrower->id ? 'selected' : '' }}>
+                                {{ $borrower->name }} ({{ $borrower->email }}) — [{{ strtoupper($borrower->role) }}]
+                            </option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('user_id')" class="mt-1.5" />
+                </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                            @foreach($books as $book)
-                            <label class="relative flex items-center p-4 bg-white rounded-xl border border-gray-100 cursor-pointer hover:border-indigo-300 transition-all group">
-                                <input type="checkbox" name="book_ids[]" value="{{ $book->id }}" class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                <span class="ml-4 flex flex-col">
-                                    <span class="text-sm font-bold text-gray-900 group-hover:text-indigo-600">{{ $book->title }}</span>
-                                    <span class="text-xs text-gray-500">Stok: {{ $book->available_stock }}</span>
+                <div class="p-5 bg-[#F8F8F7] rounded-md border border-neutral-border space-y-2">
+                    <label for="due_date" class="block text-xs font-semibold text-neutral-body uppercase tracking-wider px-0.5">
+                        Batas Waktu Pengembalian (Jatuh Tempo)
+                    </label>
+                    <input type="date" name="due_date" id="due_date" required 
+                        min="{{ now()->addDay()->toDateString() }}" 
+                        max="{{ now()->addDays(14)->toDateString() }}"
+                        value="{{ now()->addDays(7)->toDateString() }}"
+                        class="w-full px-3.5 py-2.5 bg-white border border-neutral-border rounded-md text-sm font-medium text-neutral-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs">
+                    <p class="text-[11px] text-neutral-muted italic px-0.5">* Standar peminjaman adalah 7 hari kalender (maksimal 14 hari).</p>
+                    <x-input-error :messages="$errors->get('due_date')" class="mt-1.5" />
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs font-semibold text-neutral-body uppercase tracking-wider px-0.5">
+                        Pilih Koleksi Buku yang Dipinjam
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto p-4 bg-[#F8F8F7] rounded-md border border-neutral-border custom-scrollbar">
+                        @foreach($books as $book)
+                            <label class="relative flex items-center p-3.5 bg-white rounded border border-neutral-border cursor-pointer hover:border-primary transition-all group">
+                                <input type="checkbox" name="book_ids[]" value="{{ $book->id }}" 
+                                    class="w-4 h-4 text-primary border-neutral-border rounded focus:ring-primary/20">
+                                <span class="ml-3 flex flex-col min-w-0">
+                                    <span class="font-sans text-xs font-semibold text-neutral-dark group-hover:text-primary transition-colors truncate">{{ $book->title }}</span>
+                                    <span class="text-[10px] text-neutral-muted">Tersedia: {{ $book->available_stock }} Eks • {{ $book->location->name ?? 'Rak Utama' }}</span>
                                 </span>
                             </label>
-                            @endforeach
-                        </div>
-                        <x-input-error :messages="$errors->get('book_ids')" class="mt-2" />
+                        @endforeach
                     </div>
+                    <x-input-error :messages="$errors->get('book_ids')" class="mt-1.5" />
+                </div>
 
-                    <div class="flex items-center justify-end">
-                        <x-secondary-button class="mr-3" onclick="window.history.back()">Batal</x-secondary-button>
-                        <x-primary-button class="bg-indigo-600 hover:bg-indigo-700 py-3 px-8">
-                            Simpan Peminjaman
-                        </x-primary-button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div class="pt-6 border-t border-neutral-border flex items-center justify-end space-x-3">
+                    <a href="{{ route('admin.loans.index') }}" class="btn-editorial-outline text-xs py-2 px-4 uppercase tracking-wider">Batal</a>
+                    <x-button type="submit" variant="primary" class="text-xs py-2.5 px-6 uppercase tracking-wider font-semibold">
+                        Simpan Transaksi Sirkulasi
+                    </x-button>
+                </div>
+            </form>
+        </x-card>
     </div>
 </x-app-layout>

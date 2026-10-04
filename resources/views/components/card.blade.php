@@ -1,7 +1,7 @@
-<div {{ $attributes->merge(['class' => 'bg-white rounded-xl border border-slate-200 shadow-sm transition-all duration-300']) }}>
+<div {{ $attributes->merge(['class' => 'bg-white rounded-lg border border-neutral-border shadow-xs transition-all duration-200']) }}>
     @if(isset($header))
-        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
-            <h3 class="text-slate-900 font-semibold tracking-tight">{{ $header }}</h3>
+        <div class="px-6 py-4 border-b border-neutral-border bg-[#F8F8F7] rounded-t-lg">
+            <h3 class="font-sans text-neutral-dark font-bold text-lg tracking-tight">{{ $header }}</h3>
         </div>
     @endif
     
@@ -10,7 +10,7 @@
     </div>
 
     @if(isset($footer))
-        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-xl">
+        <div class="px-6 py-4 border-t border-neutral-border bg-[#F8F8F7] rounded-b-lg">
             {{ $footer }}
         </div>
     @endif

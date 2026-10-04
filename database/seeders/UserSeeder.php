@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class UserSeeder extends Seeder
 {
@@ -12,25 +14,22 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@techperpus.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'role' => 'admin',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@techperpus.com'],
+            [
+                'name' => 'Administrator Pustaka',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+            ]
+        );
 
-        \App\Models\User::create([
-            'name' => 'Petugas Satu',
-            'email' => 'staff@techperpus.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'role' => 'staff',
-        ]);
-
-        \App\Models\User::create([
-            'name' => 'Member Satu',
-            'email' => 'member@techperpus.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'role' => 'member',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'anggota@techperpus.com'],
+            [
+                'name' => 'Anggota Perpustakaan',
+                'password' => Hash::make('password'),
+                'role' => 'anggota',
+            ]
+        );
     }
 }

@@ -5,25 +5,41 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ config('app.name', 'RPK PUSTAKA IMM SAINTEK MU') }} — Modern Academic Editorial Library</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="{{ asset('images/logo-rpk.ico') }}">
+        <link rel="shortcut icon" type="image/x-icon" href="{{ asset('images/logo-rpk.ico') }}">
+
+        <!-- Fonts: Inter Sans-Serif System -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        <style>
+            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+            .font-serif { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        </style>
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+    <body class="font-sans text-neutral-dark bg-white antialiased selection:bg-primary/10 selection:text-primary">
+        <div class="min-h-screen flex flex-col justify-center items-center py-12 px-6 bg-[#F8F8F7]">
+            <div class="text-center mb-8">
+                <a href="/" class="inline-flex flex-col items-center group">
+                    <img src="{{ asset('images/logo-rpk.png') }}" alt="RPK PUSTAKA IMM SAINTEK MU" class="h-14 w-auto object-contain mb-3">
+                    <span class="font-sans text-2xl font-bold tracking-tight text-neutral-dark block leading-none">RPK PUSTAKA</span>
+                    <span class="text-[10px] font-semibold text-neutral-muted uppercase tracking-wider block mt-1.5">IMM SAINTEK MU</span>
                 </a>
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+            <div class="w-full sm:max-w-md p-8 bg-white border border-neutral-border rounded-lg shadow-xs">
                 {{ $slot }}
+            </div>
+
+            <div class="mt-8 text-center text-xs text-neutral-muted">
+                <a href="/" class="hover:text-primary transition-colors">&larr; Kembali ke Beranda Perpustakaan</a>
             </div>
         </div>
     </body>

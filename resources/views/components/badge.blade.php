@@ -4,15 +4,18 @@
 
 @php
     $variants = [
-        'slate' => 'bg-slate-100 text-slate-700',
-        'indigo' => 'bg-indigo-50 text-indigo-700',
-        'emerald' => 'bg-emerald-50 text-emerald-700',
-        'rose' => 'bg-rose-50 text-rose-700',
-        'amber' => 'bg-amber-50 text-amber-700',
-        'blue' => 'bg-blue-50 text-blue-700',
+        'slate' => 'bg-[#F8F8F7] text-[#666666] border border-[#E5E5E5]',
+        'primary' => 'bg-[#FEF2F2] text-primary border border-[#FECACA]',
+        'accent' => 'bg-[#FFF9ED] text-accent border border-[#FDE68A]',
+        'indigo' => 'bg-[#E3F2FD] text-[#1976D2] border border-[#BBDEFB]',
+        'blue' => 'bg-[#E3F2FD] text-[#1976D2] border border-[#BBDEFB]',
+        'emerald' => 'bg-[#EDF7ED] text-[#2E7D32] border border-[#C8E6C9]',
+        'rose' => 'bg-[#FDEDED] text-[#D32F2F] border border-[#FFCDD2]',
+        'amber' => 'bg-[#FFF8E1] text-[#B78103] border border-[#FFE082]',
     ];
+    $badgeClass = $variants[$variant] ?? $variants['slate'];
 @endphp
 
-<span {{ $attributes->merge(['class' => "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest {$variants[$variant]}"]) }}>
+<span {{ $attributes->merge(['class' => "inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider {$badgeClass}"]) }}>
     {{ $slot }}
 </span>
