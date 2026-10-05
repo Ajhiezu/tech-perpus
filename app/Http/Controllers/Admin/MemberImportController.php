@@ -113,11 +113,7 @@ class MemberImportController extends Controller
             }
 
             try {
-                $password = $cand['password'] ?? null;
-                if (empty($password)) {
-                    // Generate default password from name + birth year or random
-                    $password = Str::random(10);
-                }
+                $password = !empty($cand['password']) ? $cand['password'] : 'password';
 
                 User::create([
                     'name'     => $cand['name'],
@@ -248,18 +244,20 @@ class MemberImportController extends Controller
     private function buildColumnMap(array $headers): array
     {
         $map = [];
-        $nameAliases    = ['nama', 'name', 'nama lengkap', 'full name', 'username'];
-        $emailAliases   = ['email', 'e-mail', 'alamat email', 'email address'];
-        $roleAliases    = ['role', 'peran', 'hak akses', 'tipe', 'type'];
-        $phoneAliases   = ['no_telepon', 'phone', 'telepon', 'no telepon', 'hp', 'nomor hp', 'handphone', 'no. hp'];
-        $addressAliases = ['alamat', 'address', 'domisili', 'tempat tinggal'];
+        $nameAliases     = ['nama', 'name', 'nama lengkap', 'full name', 'username'];
+        $emailAliases    = ['email', 'e-mail', 'alamat email', 'email address'];
+        $roleAliases     = ['role', 'peran', 'hak akses', 'tipe', 'type'];
+        $phoneAliases    = ['no_telepon', 'phone', 'telepon', 'no telepon', 'hp', 'nomor hp', 'handphone', 'no. hp'];
+        $addressAliases  = ['alamat', 'address', 'domisili', 'tempat tinggal'];
+        $passwordAliases = ['password', 'kata_sandi', 'pass', 'kata sandi'];
 
         foreach ($headers as $i => $h) {
-            if (in_array($h, $nameAliases))    $map['name']    = $i;
-            if (in_array($h, $emailAliases))   $map['email']   = $i;
-            if (in_array($h, $roleAliases))    $map['role']    = $i;
-            if (in_array($h, $phoneAliases))   $map['phone']   = $i;
-            if (in_array($h, $addressAliases)) $map['address'] = $i;
+            if (in_array($h, $nameAliases))     $map['name']     = $i;
+            if (in_array($h, $emailAliases))    $map['email']    = $i;
+            if (in_array($h, $roleAliases))     $map['role']     = $i;
+            if (in_array($h, $phoneAliases))    $map['phone']    = $i;
+            if (in_array($h, $addressAliases))  $map['address']  = $i;
+            if (in_array($h, $passwordAliases)) $map['password'] = $i;
         }
 
         return $map;
@@ -275,11 +273,12 @@ class MemberImportController extends Controller
         }
 
         return [
-            'name'    => $get('name'),
-            'email'   => strtolower($get('email')),
-            'role'    => $role,
-            'phone'   => $get('phone') ?: null,
-            'address' => $get('address') ?: null,
+            'name'     => $get('name'),
+            'email'    => strtolower($get('email')),
+            'role'     => $role,
+            'phone'    => $get('phone') ?: null,
+            'address'  => $get('address') ?: null,
+            'password' => $get('password') ?: null,
         ];
     }
 

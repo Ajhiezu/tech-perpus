@@ -5,9 +5,9 @@
 
     <div class="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
         <div>
-            <a href="{{ route('anggota.essays.index') }}" class="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-neutral-muted hover:text-primary transition-colors">
+            <a href="{{ Auth::check() ? route('anggota.essays.index') : url('/') }}" class="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-neutral-muted hover:text-primary transition-colors">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Kembali ke Daftar Tulisan
+                {{ Auth::check() ? 'Kembali ke Daftar Tulisan' : 'Kembali ke Beranda Pustaka' }}
             </a>
         </div>
 
@@ -82,8 +82,8 @@
 
             <div class="pt-8 border-t border-neutral-border flex items-center justify-between text-xs text-neutral-muted">
                 <span>RPK PUSTAKA IMM SAINTEK MU — Ruang Karya Literasi Anggota</span>
-                <a href="{{ route('anggota.essays.index') }}" class="font-semibold text-primary hover:underline">
-                    &larr; Kembali ke Daftar Tulisan
+                <a href="{{ Auth::check() ? route('anggota.essays.index') : url('/') }}" class="font-semibold text-primary hover:underline">
+                    &larr; {{ Auth::check() ? 'Kembali ke Daftar Tulisan' : 'Kembali ke Beranda Utama' }}
                 </a>
             </div>
         </article>

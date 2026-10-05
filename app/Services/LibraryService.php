@@ -164,16 +164,21 @@ class LibraryService
                 if (!$book) continue;
 
                 $fineAmount = 0;
-                if ($book->fine_type === 'fixed') {
+                if ($book->fine_type === 'fixed' && !empty($book->fine_value)) {
                     $fineAmount = (float) filter_var($book->fine_value, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-                } elseif ($book->fine_type === 'multiplier') {
+                } elseif ($book->fine_type === 'multiplier' && !empty($book->fine_value)) {
                     $multiplierStr = preg_replace('/[^0-9.]/', '', $book->fine_value);
                     $multiplier = (float) ($multiplierStr ?: 1);
                     $priceStr = filter_var($book->price, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
                     $price = (float) $priceStr;
                     $fineAmount = $price * $multiplier;
                 } else {
-                    $fineAmount = (float) filter_var($book->fine_value, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+                    $val = !empty($book->fine_value) ? $book->fine_value : $book->price;
+                    $fineAmount = (float) filter_var($val, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+                }
+
+                if ($fineAmount <= 0 && !empty($book->price)) {
+                    $fineAmount = (float) filter_var($book->price, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
                 }
 
                 $fineAmount = min($fineAmount, 50000000); // Cap fine at 50M

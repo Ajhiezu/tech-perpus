@@ -5,17 +5,13 @@ namespace App\View\Components;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
-class AppLayout extends Component
+class PublicLayout extends Component
 {
     /**
      * Get the view / contents that represents the component.
      */
     public function render(): View
     {
-        if (!auth()->check()) {
-            return view('layouts.public');
-        }
-
-        return view('layouts.app');
+        return view('layouts.public');
     }
 }

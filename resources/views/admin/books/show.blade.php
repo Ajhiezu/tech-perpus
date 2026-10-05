@@ -357,7 +357,11 @@
                                             <td class="px-6 py-3.5 whitespace-nowrap text-neutral-body">
                                                 @if($loan->returnBook)
                                                     <span class="capitalize font-semibold text-neutral-dark">
-                                                        {{ $loan->returnBook->condition === 'good' ? 'Baik' : ($loan->returnBook->condition === 'damaged' ? 'Rusak' : 'Hilang') }}
+                                                        @if($loan->isDigital())
+                                                            Kembali (Digital)
+                                                        @else
+                                                            {{ $loan->returnBook->condition === 'good' ? 'Baik' : ($loan->returnBook->condition === 'damaged' ? 'Rusak' : 'Hilang') }}
+                                                        @endif
                                                     </span>
                                                 @else
                                                     <span class="text-neutral-muted italic">-</span>

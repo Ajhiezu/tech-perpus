@@ -5,7 +5,7 @@
 
     <div class="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
         <div>
-            <a href="{{ route('anggota.articles.index') }}" 
+            <a href="{{ Auth::check() ? route('anggota.articles.index') : route('public.articles.index') }}" 
                class="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-neutral-muted hover:text-primary transition-colors">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Kembali ke Arsip Artikel
@@ -52,7 +52,7 @@
             <!-- Footer Author Sign-off -->
             <div class="pt-8 border-t border-neutral-border flex items-center justify-between text-xs text-neutral-muted">
                 <span>Diterbitkan oleh Perpustakaan RPK PUSTAKA IMM SAINTEK MU</span>
-                <a href="{{ route('anggota.articles.index') }}" class="font-semibold text-primary hover:underline">
+                <a href="{{ Auth::check() ? route('anggota.articles.index') : route('public.articles.index') }}" class="font-semibold text-primary hover:underline">
                     &larr; Lihat Artikel Lainnya
                 </a>
             </div>
@@ -64,7 +64,7 @@
                 <h3 class="font-serif text-xl font-semibold text-neutral-dark">Artikel Terkait Lainnya</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     @foreach($latestArticles as $rel)
-                        <a href="{{ route('anggota.articles.show', $rel) }}" class="p-4 bg-white rounded-lg border border-neutral-border hover:border-primary/50 transition-colors block group">
+                        <a href="{{ Auth::check() ? route('anggota.articles.show', $rel) : route('public.articles.show', $rel->slug) }}" class="p-4 bg-white rounded-lg border border-neutral-border hover:border-primary/50 transition-colors block group">
                             <span class="text-[10px] text-neutral-muted block mb-1">{{ $rel->published_at?->format('d M Y') }}</span>
                             <h4 class="font-serif text-sm font-semibold text-neutral-dark group-hover:text-primary transition-colors line-clamp-1">
                                 {{ $rel->title }}

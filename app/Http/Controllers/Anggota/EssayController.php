@@ -72,6 +72,10 @@ class EssayController extends Controller
     {
         $user = Auth::user();
 
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Silakan masuk ke akun anggota/admin Anda terlebih dahulu untuk membaca esai.');
+        }
+
         // IDOR Protection: only the author or admin can view unpublished essays
         if ($essay->user_id !== $user->id && !$essay->isPublished() && !$user->isAdmin()) {
             abort(403, 'Akses ditolak: Anda tidak memiliki izin untuk melihat tulisan ini.');
@@ -83,6 +87,10 @@ class EssayController extends Controller
     public function downloadFile(Essay $essay)
     {
         $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
         // IDOR Protection on private file download
         if ($essay->user_id !== $user->id && !$essay->isPublished() && !$user->isAdmin()) {

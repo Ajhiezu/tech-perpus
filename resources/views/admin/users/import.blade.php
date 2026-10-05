@@ -89,6 +89,7 @@
                         @foreach([
                             ['Nama Lengkap', 'nama, name, nama lengkap', 'Ya', 'Nama lengkap anggota'],
                             ['Email', 'email, e-mail, alamat email', 'Ya', 'Email unik, digunakan untuk login'],
+                            ['Password', 'password, kata_sandi, pass', 'Tidak', 'Password akun. Default jika kosong: password'],
                             ['Peran / Role', 'role, peran, hak akses, tipe', 'Tidak', 'Isi "anggota" atau "admin". Default: anggota'],
                             ['Nomor HP', 'no_telepon, phone, hp, no telepon', 'Tidak', 'Nomor telepon/WhatsApp anggota'],
                             ['Alamat', 'alamat, address, domisili', 'Tidak', 'Alamat domisili anggota'],
@@ -114,7 +115,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <div>
-                        <strong>Catatan Penting:</strong> Password akun anggota akan di-generate otomatis dan dapat diubah sendiri oleh anggota setelah login pertama. Email yang sudah terdaftar di sistem akan dilewati secara otomatis (tidak error).
+                        <strong>Catatan Penting:</strong> Password default untuk akun anggota hasil import adalah <code class="bg-blue-100 px-1.5 py-0.5 rounded font-mono font-bold">password</code> (atau disesuaikan jika terdapat kolom password di file CSV/Excel). Anggota dapat mengubah password setelah login.
                     </div>
                 </div>
             </div>

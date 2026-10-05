@@ -442,7 +442,7 @@
                                     </div>
                                     <h4 class="text-base font-bold text-neutral-dark group-hover:text-primary transition-colors line-clamp-2 leading-snug">
                                         @auth
-                                            <a href="{{ route('anggota.essays.show', $essay) }}">
+                                            <a href="{{ Auth::user()->isAdmin() ? route('admin.essays.show', $essay) : route('anggota.essays.show', $essay) }}">
                                                 {{ $essay->title }}
                                             </a>
                                         @else
@@ -458,7 +458,7 @@
                                 <div class="pt-3 border-t border-neutral-border flex items-center justify-between text-xs">
                                     <span class="font-medium text-neutral-muted">Oleh: <strong class="text-neutral-dark">{{ $essay->user->name ?? 'Anggota IMM' }}</strong></span>
                                     @auth
-                                        <a href="{{ route('anggota.essays.show', $essay) }}" class="font-semibold text-primary hover:underline flex items-center">
+                                        <a href="{{ Auth::user()->isAdmin() ? route('admin.essays.show', $essay) : route('anggota.essays.show', $essay) }}" class="font-semibold text-primary hover:underline flex items-center">
                                             Baca Esai
                                             <svg class="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                         </a>

@@ -81,7 +81,7 @@
         </div>
 
         <!-- 2 Column Main Grid -->
-        <div class="grid lg:grid-cols-3 gap-6">
+        <div class="grid lg:grid-cols-3 gap-6" x-data="{ condition: 'good' }">
             
             <!-- Left Column (2 Cols) -->
             <div class="lg:col-span-2 space-y-6">
@@ -173,152 +173,170 @@
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-primary"></span>
                             <h3 class="text-xs font-bold text-neutral-dark uppercase tracking-wider">
-                                Formulir Pengembalian Koleksi
+                                {{ $loan->isDigital() ? 'Formulir Pengembalian Naskah Digital' : 'Formulir Pengembalian Koleksi Fisik' }}
                             </h3>
                         </div>
-                        <span class="text-xs text-neutral-muted font-mono">Verifikasi Fisik & Integritas</span>
+                        <span class="text-xs font-mono font-semibold text-neutral-muted">
+                            {{ $loan->isDigital() ? 'Sistem Sirkulasi Digital' : 'Verifikasi Fisik & Integritas' }}
+                        </span>
                     </div>
 
-                    <form action="{{ route('admin.loans.returnBook', $loan) }}" method="POST" class="p-6 sm:p-8 space-y-6" x-data="{ condition: 'good' }">
+                    <form action="{{ route('admin.loans.returnBook', $loan) }}" method="POST" class="p-6 sm:p-8 space-y-6">
                         @csrf
-                        <div>
-                            <div class="flex items-center justify-between mb-3">
-                                <label class="block text-xs font-bold text-neutral-dark uppercase tracking-wider">
-                                    Kondisi Fisik Koleksi Saat Kembali <span class="text-primary">*</span>
-                                </label>
-                                <span class="text-[11px] font-mono text-neutral-muted">Pilih 1 dari 3 status</span>
-                            </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <!-- Option 1: Baik -->
-                                <label @click="condition = 'good'"
-                                       :class="condition === 'good' 
-                                           ? 'border-emerald-600 bg-emerald-50/40 ring-1 ring-emerald-600 shadow-xs' 
-                                           : 'border-neutral-border bg-white hover:border-neutral-300 hover:bg-[#F8F8F7]'"
-                                       class="relative flex flex-col justify-between p-4.5 rounded-lg border-2 transition-all cursor-pointer select-none">
-                                    <input type="radio" name="condition" value="good" x-model="condition" class="sr-only">
-                                    
-                                    <div>
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="font-sans font-bold text-sm text-neutral-dark">
-                                                Kondisi Baik
-                                            </span>
-                                            <div :class="condition === 'good' ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'"
-                                                 class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors">
-                                                <div x-show="condition === 'good'" class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                                            </div>
-                                        </div>
-                                        <p class="text-xs text-neutral-body leading-relaxed">
-                                            Naskah utuh, bersih, dan tanpa cacat fisik atau coretan.
-                                        </p>
-                                    </div>
-
-                                    <div class="mt-4 pt-3 border-t border-neutral-border/70 flex items-center gap-1.5 text-xs">
-                                        <span class="inline-flex items-center gap-1.5 text-emerald-700 font-semibold text-[11px]">
-                                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                                            +1 Stok Rak Tersedia
-                                        </span>
-                                    </div>
-                                </label>
-
-                                <!-- Option 2: Rusak -->
-                                <label @click="condition = 'damaged'"
-                                       :class="condition === 'damaged' 
-                                           ? 'border-accent bg-amber-50/60 ring-1 ring-accent shadow-xs' 
-                                           : 'border-neutral-border bg-white hover:border-neutral-300 hover:bg-[#F8F8F7]'"
-                                       class="relative flex flex-col justify-between p-4.5 rounded-lg border-2 transition-all cursor-pointer select-none">
-                                    <input type="radio" name="condition" value="damaged" x-model="condition" class="sr-only">
-                                    
-                                    <div>
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="font-sans font-bold text-sm text-neutral-dark">
-                                                Buku Rusak
-                                            </span>
-                                            <div :class="condition === 'damaged' ? 'border-accent bg-accent' : 'border-neutral-300 bg-white'"
-                                                 class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors">
-                                                <div x-show="condition === 'damaged'" class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                                            </div>
-                                        </div>
-                                        <p class="text-xs text-neutral-body leading-relaxed">
-                                            Terdapat robekan, halaman lepas, basah, atau noda parah.
-                                        </p>
-                                    </div>
-
-                                    <div class="mt-4 pt-3 border-t border-neutral-border/70 flex items-center gap-1.5 text-xs">
-                                        <span class="inline-flex items-center gap-1.5 text-amber-800 font-semibold text-[11px]">
-                                            <svg class="w-3.5 h-3.5 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                            Denda Kerusakan Fisik
-                                        </span>
-                                    </div>
-                                </label>
-
-                                <!-- Option 3: Hilang -->
-                                <label @click="condition = 'lost'"
-                                       :class="condition === 'lost' 
-                                           ? 'border-primary bg-primary-light/60 ring-1 ring-primary shadow-xs' 
-                                           : 'border-neutral-border bg-white hover:border-neutral-300 hover:bg-[#F8F8F7]'"
-                                       class="relative flex flex-col justify-between p-4.5 rounded-lg border-2 transition-all cursor-pointer select-none">
-                                    <input type="radio" name="condition" value="lost" x-model="condition" class="sr-only">
-                                    
-                                    <div>
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="font-sans font-bold text-sm text-neutral-dark">
-                                                Buku Hilang
-                                            </span>
-                                            <div :class="condition === 'lost' ? 'border-primary bg-primary' : 'border-neutral-300 bg-white'"
-                                                 class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors">
-                                                <div x-show="condition === 'lost'" class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                                            </div>
-                                        </div>
-                                        <p class="text-xs text-neutral-body leading-relaxed">
-                                            Koleksi fisik tidak dapat dikembalikan oleh peminjam.
-                                        </p>
-                                    </div>
-
-                                    <div class="mt-4 pt-3 border-t border-neutral-border/70 flex items-center gap-1.5 text-xs">
-                                        <span class="inline-flex items-center gap-1.5 text-primary font-semibold text-[11px]">
-                                            <svg class="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                            Ganti Rugi 100% Harga Buku
-                                        </span>
-                                    </div>
-                                </label>
-                            </div>
-
-                            <!-- Clear Explanatory Notice -->
-                            <div class="mt-4 px-4 py-3 rounded-md bg-[#F8F8F7] border border-neutral-border text-xs leading-relaxed flex items-start gap-2.5">
-                                <span class="w-2 h-2 rounded-full shrink-0 mt-1"
-                                      :class="{
-                                          'bg-emerald-600': condition === 'good',
-                                          'bg-accent': condition === 'damaged',
-                                          'bg-primary': condition === 'lost'
-                                      }"></span>
-                                <div class="flex-1 text-neutral-body">
-                                    <span x-show="condition === 'good'">
-                                        <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi diverifikasi dalam kondisi prima. Kuota fisik buku di rak akan otomatis dipulihkan (<strong class="text-emerald-700">+1 stok tersedia</strong>) dan tidak dikenakan denda fisik.
-                                    </span>
-                                    <span x-show="condition === 'damaged'">
-                                        <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi mengalami cacat fisik. Stok di rak tidak akan bertambah sebelum diperbaiki, dan sistem otomatis membukukan denda kerusakan fisik (50% dari harga buku).
-                                    </span>
-                                    <span x-show="condition === 'lost'">
-                                        <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi dinyatakan hilang. Eksemplar dihapus dari peredaran dan peminjam diwajibkan membayar denda penggantian 100% harga buku.
-                                    </span>
+                        @if($loan->isDigital())
+                            <!-- Digital Loan Return Notice -->
+                            <input type="hidden" name="condition" value="good">
+                            <div class="p-4 rounded-lg bg-[#FFF9ED] border border-[#FDE68A] text-neutral-dark text-xs leading-relaxed flex items-start gap-3 shadow-xs">
+                                <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#B45309] shrink-0 border border-[#FDE68A]">
+                                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-bold text-[#B45309] block text-sm mb-0.5">Peminjaman Naskah Digital</span>
+                                    <span>Pengembalian naskah digital dicatat secara otomatis oleh sistem tanpa verifikasi kondisi fisik (bebas dari kriteria denda kerusakan/kehilangan fisik).</span>
                                 </div>
                             </div>
-                        </div>
+                        @else
+                            <!-- Physical Loan Condition Selection -->
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <label class="block text-xs font-bold text-neutral-dark uppercase tracking-wider">
+                                        Kondisi Fisik Koleksi Saat Kembali <span class="text-primary">*</span>
+                                    </label>
+                                    <span class="text-[11px] font-mono text-neutral-muted">Pilih 1 dari 3 status</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <!-- Option 1: Baik -->
+                                    <label @click="condition = 'good'"
+                                           :class="condition === 'good' 
+                                               ? 'border-emerald-600 bg-emerald-50/40 ring-1 ring-emerald-600 shadow-xs' 
+                                               : 'border-neutral-border bg-white hover:border-neutral-300 hover:bg-[#F8F8F7]'"
+                                           class="relative flex flex-col justify-between p-4.5 rounded-lg border-2 transition-all cursor-pointer select-none">
+                                        <input type="radio" name="condition" value="good" x-model="condition" class="sr-only">
+                                        
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="font-sans font-bold text-sm text-neutral-dark">
+                                                    Kondisi Baik
+                                                </span>
+                                                <div :class="condition === 'good' ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'"
+                                                     class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors">
+                                                    <div x-show="condition === 'good'" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-neutral-body leading-relaxed">
+                                                Naskah utuh, bersih, dan tanpa cacat fisik atau coretan.
+                                            </p>
+                                        </div>
+
+                                        <div class="mt-4 pt-3 border-t border-neutral-border/70 flex items-center gap-1.5 text-xs">
+                                            <span class="inline-flex items-center gap-1.5 text-emerald-700 font-semibold text-[11px]">
+                                                <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                +1 Stok Rak Tersedia
+                                            </span>
+                                        </div>
+                                    </label>
+
+                                    <!-- Option 2: Rusak -->
+                                    <label @click="condition = 'damaged'"
+                                           :class="condition === 'damaged' 
+                                               ? 'border-accent bg-amber-50/60 ring-1 ring-accent shadow-xs' 
+                                               : 'border-neutral-border bg-white hover:border-neutral-300 hover:bg-[#F8F8F7]'"
+                                           class="relative flex flex-col justify-between p-4.5 rounded-lg border-2 transition-all cursor-pointer select-none">
+                                        <input type="radio" name="condition" value="damaged" x-model="condition" class="sr-only">
+                                        
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="font-sans font-bold text-sm text-neutral-dark">
+                                                    Buku Rusak
+                                                </span>
+                                                <div :class="condition === 'damaged' ? 'border-accent bg-accent' : 'border-neutral-300 bg-white'"
+                                                     class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors">
+                                                    <div x-show="condition === 'damaged'" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-neutral-body leading-relaxed">
+                                                Terdapat robekan, halaman lepas, basah, atau noda parah.
+                                            </p>
+                                        </div>
+
+                                        <div class="mt-4 pt-3 border-t border-neutral-border/70 flex items-center gap-1.5 text-xs">
+                                            <span class="inline-flex items-center gap-1.5 text-amber-800 font-semibold text-[11px]">
+                                                <svg class="w-3.5 h-3.5 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                                Ganti Rugi / Denda 100% Harga Buku
+                                            </span>
+                                        </div>
+                                    </label>
+
+                                    <!-- Option 3: Hilang -->
+                                    <label @click="condition = 'lost'"
+                                           :class="condition === 'lost' 
+                                               ? 'border-primary bg-primary-light/60 ring-1 ring-primary shadow-xs' 
+                                               : 'border-neutral-border bg-white hover:border-neutral-300 hover:bg-[#F8F8F7]'"
+                                           class="relative flex flex-col justify-between p-4.5 rounded-lg border-2 transition-all cursor-pointer select-none">
+                                        <input type="radio" name="condition" value="lost" x-model="condition" class="sr-only">
+                                        
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="font-sans font-bold text-sm text-neutral-dark">
+                                                    Buku Hilang
+                                                </span>
+                                                <div :class="condition === 'lost' ? 'border-primary bg-primary' : 'border-neutral-300 bg-white'"
+                                                     class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors">
+                                                    <div x-show="condition === 'lost'" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-neutral-body leading-relaxed">
+                                                Koleksi fisik tidak dapat dikembalikan oleh peminjam.
+                                            </p>
+                                        </div>
+
+                                        <div class="mt-4 pt-3 border-t border-neutral-border/70 flex items-center gap-1.5 text-xs">
+                                            <span class="inline-flex items-center gap-1.5 text-primary font-semibold text-[11px]">
+                                                <svg class="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                Ganti Rugi 100% Harga Buku
+                                            </span>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Clear Explanatory Notice -->
+                                <div class="mt-4 px-4 py-3 rounded-md bg-[#F8F8F7] border border-neutral-border text-xs leading-relaxed flex items-start gap-2.5">
+                                    <span class="w-2 h-2 rounded-full shrink-0 mt-1"
+                                          :class="{
+                                              'bg-emerald-600': condition === 'good',
+                                              'bg-accent': condition === 'damaged',
+                                              'bg-primary': condition === 'lost'
+                                          }"></span>
+                                    <div class="flex-1 text-neutral-body">
+                                        <span x-show="condition === 'good'">
+                                            <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi diverifikasi dalam kondisi prima. Kuota fisik buku di rak akan otomatis dipulihkan (<strong class="text-emerald-700">+1 stok tersedia</strong>) dan tidak dikenakan denda fisik.
+                                        </span>
+                                        <span x-show="condition === 'damaged'">
+                                            <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi mengalami cacat fisik. Stok di rak tidak akan bertambah sebelum diperbaiki, dan sistem otomatis membukukan denda kerusakan fisik (sama dengan denda buku hilang / 100% harga buku).
+                                        </span>
+                                        <span x-show="condition === 'lost'">
+                                            <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi dinyatakan hilang. Eksemplar dihapus dari peredaran dan peminjam diwajibkan membayar denda penggantian 100% harga buku.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
                         <div>
                             <label for="notes" class="block text-xs font-bold text-neutral-dark uppercase tracking-wider mb-2">
-                                Catatan Pemeriksaan Fisik (Opsional)
+                                {{ $loan->isDigital() ? 'Catatan Pengembalian (Opsional)' : 'Catatan Pemeriksaan Fisik (Opsional)' }}
                             </label>
-                            <textarea id="notes" name="notes" rows="3" class="w-full bg-[#F8F8F7] border border-neutral-border text-neutral-dark text-sm p-3 rounded-md focus:outline-none focus:border-primary focus:bg-white transition-colors" placeholder="Catat detail kondisi buku jika terdapat halaman terlipat, coretan, atau catatan sanksi penggantian..."></textarea>
+                            <textarea id="notes" name="notes" rows="3" class="w-full bg-[#F8F8F7] border border-neutral-border text-neutral-dark text-sm p-3 rounded-md focus:outline-none focus:border-primary focus:bg-white transition-colors" placeholder="{{ $loan->isDigital() ? 'Catat keterangan tambahan untuk pengembalian digital ini...' : 'Catat detail kondisi buku jika terdapat halaman terlipat, coretan, atau catatan sanksi penggantian...' }}"></textarea>
                         </div>
 
                         <div class="pt-4 border-t border-neutral-border flex flex-col sm:flex-row items-center justify-between gap-4">
                             <p class="text-xs text-neutral-muted">
-                                Konfirmasi ini akan memperbarui status sirkulasi dan kuota stok koleksi perpustakaan.
+                                Konfirmasi ini akan memperbarui status sirkulasi perpustakaan.
                             </p>
                             <button type="submit" class="btn-editorial w-full sm:w-auto px-8 py-2.5 text-xs tracking-wider uppercase font-semibold">
-                                Konfirmasi Pengembalian Koleksi
+                                {{ $loan->isDigital() ? 'Konfirmasi Pengembalian Digital' : 'Konfirmasi Pengembalian Fisik' }}
                             </button>
                         </div>
                     </form>
@@ -336,7 +354,9 @@
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-mono uppercase tracking-wider text-success font-bold">Status Transaksi Selesai</span>
                             </div>
-                            <h3 class="text-lg sm:text-xl font-bold text-neutral-dark">Koleksi Telah Resmi Dikembalikan</h3>
+                            <h3 class="text-lg sm:text-xl font-bold text-neutral-dark">
+                                {{ $loan->isDigital() ? 'Naskah Digital Telah Resmi Dikembalikan' : 'Koleksi Fisik Telah Resmi Dikembalikan' }}
+                            </h3>
                             <p class="text-xs text-neutral-body leading-relaxed">
                                 Transaksi pinjaman ini telah diselesaikan dan dicatat pada <span class="font-bold text-neutral-dark">{{ \Carbon\Carbon::parse($loan->returnBook->return_date ?? $loan->updated_at)->format('d F Y') }}</span>.
                             </p>
@@ -344,9 +364,13 @@
                             @if($loan->returnBook)
                                 <div class="mt-4 pt-3 border-t border-neutral-border grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                     <div class="bg-[#F8F8F7] p-3 rounded border border-neutral-border">
-                                        <span class="text-neutral-muted block text-[10px] uppercase font-mono tracking-wider mb-0.5">Kondisi Diterima</span>
+                                        <span class="text-neutral-muted block text-[10px] uppercase font-mono tracking-wider mb-0.5">
+                                            {{ $loan->isDigital() ? 'Format Peminjaman' : 'Kondisi Diterima' }}
+                                        </span>
                                         <span class="font-bold text-neutral-dark uppercase">
-                                            @if($loan->returnBook->condition === 'good')
+                                            @if($loan->isDigital())
+                                                Dikembalikan (Digital)
+                                            @elseif($loan->returnBook->condition === 'good')
                                                 Kondisi Baik (Stok Dipulihkan)
                                             @elseif($loan->returnBook->condition === 'damaged')
                                                 Buku Rusak (Dikenakan Denda)
@@ -495,9 +519,16 @@
                                 {{ ($loan->fine->status ?? '') === 'paid' ? 'Lunas' : 'Tertunda' }}
                             </span>
                         @else
-                            <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#EDF7ED] text-success border border-[#C8E6C9]">
-                                Bebas Denda
-                            </span>
+                            <template x-if="condition === 'good'">
+                                <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#EDF7ED] text-success border border-[#C8E6C9]">
+                                    Bebas Denda
+                                </span>
+                            </template>
+                            <template x-if="condition !== 'good'">
+                                <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-red-50 text-danger border border-red-200 font-bold">
+                                    Estimasi Denda
+                                </span>
+                            </template>
                         @endif
                     </div>
 
@@ -505,9 +536,18 @@
                         <p class="text-[10px] font-mono text-neutral-muted uppercase tracking-wider mb-1">
                             Total Kewajiban Denda
                         </p>
-                        <p class="text-2xl font-sans font-bold {{ $loan->fine && $loan->fine->amount > 0 ? 'text-danger' : 'text-neutral-dark' }}">
-                            Rp {{ number_format($loan->fine ? $loan->fine->amount : 0, 0, ',', '.') }}
-                        </p>
+
+                        @if($loan->fine && $loan->fine->amount > 0)
+                            <p class="text-2xl font-sans font-bold text-danger">
+                                Rp {{ number_format($loan->fine->amount, 0, ',', '.') }}
+                            </p>
+                        @else
+                            <p class="text-2xl font-sans font-bold transition-colors"
+                               :class="condition === 'good' ? 'text-neutral-dark' : 'text-danger'">
+                                <span x-show="condition === 'good'">Rp 0</span>
+                                <span x-show="condition !== 'good'" x-cloak>Rp {{ number_format($estimatedFine ?? 0, 0, ',', '.') }}</span>
+                            </p>
+                        @endif
 
                         @if($loan->fine && $loan->fine->amount > 0)
                             <div class="mt-4 pt-3 border-t border-neutral-border space-y-2 text-xs">
@@ -566,9 +606,18 @@
                                 </div>
                             @endif
                         @else
-                            <p class="text-xs text-neutral-muted mt-3 pt-3 border-t border-neutral-border">
+                            <div x-show="condition === 'good'" class="text-xs text-neutral-muted mt-3 pt-3 border-t border-neutral-border">
                                 Transaksi sirkulasi ini bebas dari beban denda keterlambatan maupun denda kerusakan fisik.
-                            </p>
+                            </div>
+                            <div x-show="condition !== 'good'" x-cloak class="text-xs text-danger font-medium mt-3 pt-3 border-t border-neutral-border space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutral-muted font-normal">Kategori Denda:</span>
+                                    <span class="font-bold uppercase font-mono text-primary" x-text="condition === 'damaged' ? 'Kerusakan Fisik (100%)' : 'Penggantian Hilang (100%)'"></span>
+                                </div>
+                                <p class="text-[11px] text-neutral-body pt-1 leading-relaxed">
+                                    Denda penggantian sebesar <strong class="text-danger">Rp {{ number_format($estimatedFine ?? 0, 0, ',', '.') }}</strong> (100% harga koleksi) akan otomatis dibukukan saat Anda memproses tombol konfirmasi pengembalian.
+                                </p>
+                            </div>
                         @endif
                     </div>
                 </div>

@@ -20,7 +20,7 @@ class LoanController extends Controller
 
     public function index(Request $request)
     {
-        $query = Loan::with(['user', 'loanDetails.book']);
+        $query = Loan::with(['user', 'loanDetails.book', 'fine']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -42,6 +42,17 @@ class LoanController extends Controller
 
         if ($request->filled('type')) {
             $query->where('loan_type', $request->type);
+        }
+
+        if ($request->filled('fine_status')) {
+            $fineStatus = $request->fine_status;
+            if ($fineStatus === 'unpaid') {
+                $query->whereHas('fine', fn($q) => $q->where('status', 'unpaid'));
+            } elseif ($fineStatus === 'paid') {
+                $query->whereHas('fine', fn($q) => $q->where('status', 'paid'));
+            } elseif ($fineStatus === 'no_fine') {
+                $query->whereDoesntHave('fine');
+            }
         }
 
         $loans = $query->latest()->paginate(10)->withQueryString();
@@ -90,18 +101,47 @@ class LoanController extends Controller
     public function show(Loan $loan)
     {
         $loan->load(['user', 'loanDetails.book', 'returnBook', 'fine']);
-        return view('officer.loans.show', compact('loan'));
+
+        $estimatedFine = (float) $loan->loanDetails->sum(function ($detail) {
+            $book = $detail->book;
+            if (!$book) return 0;
+            if ($book->fine_type === 'fixed' && !empty($book->fine_value)) {
+                return (float) filter_var($book->fine_value, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+            } elseif ($book->fine_type === 'multiplier' && !empty($book->fine_value)) {
+                $multiplierStr = preg_replace('/[^0-9.]/', '', $book->fine_value);
+                $multiplier = (float) ($multiplierStr ?: 1);
+                $price = (float) filter_var($book->price, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+                return $price * $multiplier;
+            } else {
+                $val = !empty($book->fine_value) ? $book->fine_value : $book->price;
+                $fine = (float) filter_var($val, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+                return $fine > 0 ? $fine : (float) filter_var($book->price, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+            }
+        });
+
+        return view('officer.loans.show', compact('loan', 'estimatedFine'));
     }
 
     public function returnBook(Request $request, Loan $loan)
     {
-        $request->validate([
-            'condition' => 'required|in:good,damaged,lost',
-            'notes' => 'nullable|string',
-        ]);
+        if ($loan->isDigital()) {
+            $data = [
+                'condition' => 'good',
+                'notes'     => $request->input('notes'),
+            ];
+        } else {
+            $request->validate([
+                'condition' => 'required|in:good,damaged,lost',
+                'notes'     => 'nullable|string',
+            ]);
+            $data = [
+                'condition' => $request->input('condition'),
+                'notes'     => $request->input('notes'),
+            ];
+        }
 
         try {
-            $this->libraryService->processReturn($loan, $request->all());
+            $this->libraryService->processReturn($loan, $data);
             return redirect()->route('admin.loans.show', $loan)->with('success', 'Buku berhasil diproses pengembaliannya!');
         } catch (\DomainException $e) {
             return redirect()->route('admin.loans.show', $loan)->with('error', $e->getMessage());

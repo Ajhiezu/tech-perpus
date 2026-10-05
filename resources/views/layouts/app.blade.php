@@ -38,11 +38,29 @@
 </head>
 
 <body class="font-sans antialiased text-neutral-dark bg-white selection:bg-primary/10 selection:text-primary">
-    <div class="min-h-screen flex" x-data="{ sidebarOpen: true, mobileSidebarOpen: false }">
+    <div class="min-h-screen flex" 
+         x-data="{ 
+             sidebarOpen: window.innerWidth >= 1024, 
+             mobileSidebarOpen: false,
+             toggleSidebar() {
+                 if (window.innerWidth < 1024) {
+                     this.mobileSidebarOpen = !this.mobileSidebarOpen;
+                     if (this.mobileSidebarOpen) {
+                         this.sidebarOpen = true;
+                     }
+                 } else {
+                     this.sidebarOpen = !this.sidebarOpen;
+                 }
+             },
+             closeMobileSidebar() {
+                 this.mobileSidebarOpen = false;
+             }
+         }"
+         @resize.window="if (window.innerWidth >= 1024) mobileSidebarOpen = false">
 
         <!-- Mobile Backdrop -->
         <div x-show="mobileSidebarOpen" x-cloak 
-             @click="mobileSidebarOpen = false" 
+             @click="closeMobileSidebar()" 
              class="fixed inset-0 bg-[#181818]/40 z-40 lg:hidden backdrop-blur-xs transition-opacity"></div>
 
         <!-- Sidebar: Fixed Desktop, Off-canvas Mobile -->
@@ -56,15 +74,22 @@
             }">
             
             <!-- Brand masthead area with official RPK PUSTAKA IMM SAINTEK MU logo -->
-            <div class="h-20 flex items-center px-4 border-b border-neutral-border flex-shrink-0 overflow-hidden bg-white">
-                <a href="{{ route('dashboard') }}" class="flex items-center space-x-3 flex-shrink-0 group">
-                    <img src="{{ asset('images/logo-rpk.png') }}" alt="RPK PUSTAKA IMM SAINTEK MU" class="h-10 w-auto object-contain flex-shrink-0">
+            <div class="h-20 flex items-center justify-between px-4 border-b border-neutral-border flex-shrink-0 bg-white">
+                <a href="{{ route('dashboard') }}" class="flex items-center space-x-3 shrink-0 group">
+                    <img src="{{ asset('images/logo-rpk.png') }}" alt="RPK PUSTAKA IMM SAINTEK MU" class="h-10 w-auto object-contain shrink-0">
                     <div class="transition-all duration-300 overflow-hidden whitespace-nowrap"
                          :class="sidebarOpen ? 'opacity-100' : 'opacity-0 -translate-x-6 w-0'">
                         <span class="font-sans text-base font-bold tracking-tight text-neutral-dark block leading-none">RPK PUSTAKA</span>
                         <span class="text-[10px] font-semibold text-neutral-muted uppercase tracking-wider block mt-0.5">IMM SAINTEK MU</span>
                     </div>
                 </a>
+                <button @click="closeMobileSidebar()" 
+                        class="lg:hidden p-1.5 rounded-md text-neutral-muted hover:text-primary hover:bg-primary-light transition-colors cursor-pointer"
+                        title="Tutup Menu Mobile">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
             </div>
 
             <!-- Navigation Sidebar Links -->
@@ -396,7 +421,7 @@
             <header
                 class="h-18 bg-white/95 backdrop-blur-md border-b border-neutral-border sticky top-0 z-40 flex items-center justify-between px-6 lg:px-10">
                 <div class="flex items-center space-x-4">
-                    <button @click="sidebarOpen = !sidebarOpen; mobileSidebarOpen = !mobileSidebarOpen"
+                    <button @click="toggleSidebar()"
                         class="w-9 h-9 flex items-center justify-center hover:bg-neutral-surface rounded-md transition-colors text-neutral-dark border border-neutral-border cursor-pointer"
                         title="Alihkan Sidebar">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

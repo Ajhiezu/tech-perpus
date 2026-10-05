@@ -12,10 +12,10 @@
         
         <!-- Breadcrumb / Back Link -->
         <div>
-            <a href="{{ route('anggota.books.index') }}" 
+            <a href="{{ Auth::check() ? route('anggota.books.index') : url('/') }}" 
                class="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-neutral-muted hover:text-primary transition-colors">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Kembali ke Katalog Pustaka
+                {{ Auth::check() ? 'Kembali ke Katalog Pustaka' : 'Kembali ke Beranda Pustaka' }}
             </a>
         </div>
 

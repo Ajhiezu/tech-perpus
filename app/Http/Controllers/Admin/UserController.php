@@ -111,6 +111,6 @@ class UserController extends Controller
 
         $user->delete();
 
-        return redirect()->route('admin.users.index', ['role' => $user->role])->with('success', 'User berhasil dihapus!');
+        return redirect()->back()->with('success', 'User berhasil dihapus!');
     }
 }

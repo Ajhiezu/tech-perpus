@@ -15,7 +15,7 @@
         <div class="bg-white p-4 rounded-lg border border-neutral-border shadow-xs">
             <form action="{{ route('admin.loans.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                 <!-- Search Input -->
-                <div class="md:col-span-5 space-y-1.5">
+                <div class="md:col-span-4 space-y-1.5">
                     <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Pencarian</label>
                     <div class="relative">
                         <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,8 +27,8 @@
                 </div>
 
                 <!-- Status Filter Dropdown -->
-                <div class="md:col-span-3 space-y-1.5">
-                    <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Status</label>
+                <div class="md:col-span-2 space-y-1.5">
+                    <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Status Pinjam</label>
                     <select name="status" 
                         class="w-full px-3 py-2 bg-neutral-surface border border-neutral-border rounded-md text-sm text-neutral-dark focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs">
                         <option value="">Semua Status</option>
@@ -50,12 +50,24 @@
                     </select>
                 </div>
 
+                <!-- Denda Filter Dropdown -->
+                <div class="md:col-span-2 space-y-1.5">
+                    <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Status Denda</label>
+                    <select name="fine_status" 
+                        class="w-full px-3 py-2 bg-neutral-surface border border-neutral-border rounded-md text-sm text-neutral-dark focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs">
+                        <option value="">Semua Denda</option>
+                        <option value="unpaid" {{ request('fine_status') == 'unpaid' ? 'selected' : '' }}>Belum Lunas ⚠️</option>
+                        <option value="paid" {{ request('fine_status') == 'paid' ? 'selected' : '' }}>Denda Lunas ✓</option>
+                        <option value="no_fine" {{ request('fine_status') == 'no_fine' ? 'selected' : '' }}>Bebas Denda</option>
+                    </select>
+                </div>
+
                 <!-- Actions -->
                 <div class="md:col-span-2 flex space-x-2">
                     <x-button type="submit" variant="primary" class="flex-1 text-xs uppercase tracking-wider font-semibold py-2">
                         Filter
                     </x-button>
-                    @if(request('search') || request('status') || request('type'))
+                    @if(request('search') || request('status') || request('type') || request('fine_status'))
                         <a href="{{ route('admin.loans.index') }}" class="btn-editorial-outline text-xs uppercase tracking-wider font-semibold py-2 px-3">
                             Reset
                         </a>
@@ -65,7 +77,7 @@
         </div>
 
         <!-- Table View -->
-        <x-table :headers="['KODE & ANGGOTA', 'JENIS', 'KOLEKSI BUKU', 'TENGGAT', 'STATUS', 'AKSI']">
+        <x-table :headers="['KODE & ANGGOTA', 'JENIS', 'KOLEKSI BUKU', 'TENGGAT', 'STATUS', 'DENDA', 'AKSI']">
             @forelse($loans as $loan)
                 <tr class="hover:bg-[#F8F8F7] transition-colors">
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -106,6 +118,31 @@
                             <x-badge variant="rose">Terlambat</x-badge>
                         @endif
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        @if($loan->fine)
+                            @if($loan->fine->status === 'unpaid')
+                                <div class="space-y-0.5">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-danger border border-red-200">
+                                        Belum Lunas
+                                    </span>
+                                    <span class="block text-xs font-mono font-bold text-danger">
+                                        Rp {{ number_format($loan->fine->amount, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                            @else
+                                <div class="space-y-0.5">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#EDF7ED] text-success border border-[#C8E6C9]">
+                                        Lunas
+                                    </span>
+                                    <span class="block text-[11px] font-mono text-neutral-muted">
+                                        Rp {{ number_format($loan->fine->amount, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                            @endif
+                        @else
+                            <span class="text-xs text-neutral-muted font-mono italic">-</span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right">
                         <a href="{{ route('admin.loans.show', $loan) }}" class="btn-editorial-outline text-xs py-1.5 px-3 uppercase tracking-wider font-semibold">
                             Kelola Transaksi &rarr;
@@ -114,7 +151,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-12 text-center text-xs text-neutral-muted italic">
+                    <td colspan="7" class="px-6 py-12 text-center text-xs text-neutral-muted italic">
                         Belum ada data transaksi peminjaman yang sesuai dengan filter.
                     </td>
                 </tr>
