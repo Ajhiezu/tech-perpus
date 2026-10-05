@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        Detail Koleksi Buku
+        Detail Koleksi Buku & Status Reservasi
     </x-slot>
 
     <x-slot name="actions">
@@ -21,7 +21,6 @@
     </x-slot>
 
     <div class="space-y-6 animate-in fade-in duration-300">
-        
         <!-- Book Identity & Breadcrumb Banner Card -->
         <div class="bg-white p-5 rounded-lg border border-neutral-border shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="space-y-1.5">
@@ -76,155 +75,107 @@
                         @if($book->cover_url)
                             <img id="detail-cover-img" src="{{ $book->cover_url }}" alt="{{ $book->title }}" class="w-full h-full object-cover">
                         @else
-                            <img id="detail-cover-img" src="" alt="{{ $book->title }}" class="w-full h-full object-cover hidden">
-                            <div id="detail-cover-placeholder" class="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-surface">
+                            <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-surface">
                                 <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-primary mb-3 shadow-xs border border-neutral-border">
                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                                 </div>
                                 <span class="font-sans text-sm font-bold text-neutral-dark">{{ $book->title }}</span>
                                 <span class="text-xs text-neutral-muted mt-1">{{ $book->author }}</span>
-                                <span class="inline-block mt-3 px-2 py-0.5 bg-white border border-neutral-border text-[10px] font-bold text-neutral-muted uppercase tracking-wider rounded">RPK PUSTAKA IMM SAINTEK MU</span>
                             </div>
-
-                            @if($book->hasDigital())
-                                <script>
-                                    (async function autoRenderPdfCover() {
-                                        let attempts = 0;
-                                        while (typeof window.renderPdfFirstPage !== 'function' && attempts < 50) {
-                                            await new Promise(r => setTimeout(r, 100));
-                                            attempts++;
-                                        }
-
-                                        if (typeof window.renderPdfFirstPage !== 'function') {
-                                            console.warn('PDF.js renderer is not available.');
-                                            return;
-                                        }
-
-                                        try {
-                                            const pdfUrl = '{{ route("admin.books.stream", $book) }}';
-                                            const resp = await fetch(pdfUrl);
-                                            if (!resp.ok) return;
-
-                                            const blob = await resp.blob();
-                                            const file = new File([blob], 'naskah.pdf', { type: 'application/pdf' });
-                                            const res = await window.renderPdfFirstPage(file, 15000);
-
-                                            if (res.success && (res.blob || res.imageBase64)) {
-                                                const imgEl = document.getElementById('detail-cover-img');
-                                                const placeholderEl = document.getElementById('detail-cover-placeholder');
-
-                                                if (imgEl) {
-                                                    imgEl.src = res.imageBase64;
-                                                    imgEl.classList.remove('hidden');
-                                                }
-                                                if (placeholderEl) {
-                                                    placeholderEl.classList.add('hidden');
-                                                    placeholderEl.classList.remove('flex');
-                                                }
-
-                                                const formData = new FormData();
-                                                formData.append('_token', '{{ csrf_token() }}');
-                                                if (res.blob) {
-                                                    formData.append('cover_image', res.blob, 'cover.webp');
-                                                } else {
-                                                    formData.append('cover_base64', res.imageBase64);
-                                                }
-
-                                                await fetch('{{ route("admin.books.auto-cover", $book) }}', {
-                                                    method: 'POST',
-                                                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                                                    body: formData
-                                                });
-                                            }
-                                        } catch (err) {
-                                            console.warn('Auto cover render error:', err);
-                                        }
-                                    })();
-                                </script>
-                            @endif
                         @endif
                     </div>
                 </div>
 
-                <!-- Availability & Location Summary Card -->
+                <!-- Availability & Stock breakdown Card -->
                 <div class="bg-white p-5 rounded-lg border border-neutral-border shadow-xs space-y-4">
                     <h3 class="text-xs font-bold text-neutral-dark uppercase tracking-wider pb-2 border-b border-neutral-border">
-                        Status & Parameter Fisik
+                        Status Stok & Reservasi
                     </h3>
 
                     <div class="space-y-3 text-xs">
                         <div class="flex items-center justify-between py-1 border-b border-neutral-border/60">
-                            <span class="text-neutral-muted">Format Koleksi:</span>
-                            <span class="font-semibold text-neutral-dark capitalize">
-                                {{ $book->collection_type === 'fisik_digital' ? 'Fisik & Digital' : ($book->collection_type === 'digital' ? 'Digital Saja' : 'Buku Fisik') }}
-                            </span>
+                            <span class="text-neutral-muted">Total Stok Fisik:</span>
+                            <span class="font-bold text-neutral-dark font-mono">{{ $book->stock }} Eksemplar</span>
                         </div>
-
-                        @if($book->collection_type !== 'digital')
-                            <div class="flex items-center justify-between py-1 border-b border-neutral-border/60">
-                                <span class="text-neutral-muted">Ketersediaan Stok:</span>
-                                <div>
-                                    <span class="font-bold text-success">{{ $book->available_stock }}</span>
-                                    <span class="text-neutral-muted">/ {{ $book->stock }} Eksemplar</span>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-between py-1 border-b border-neutral-border/60">
-                                <span class="text-neutral-muted">Lokasi Rak Simpan:</span>
-                                <span class="font-semibold text-neutral-dark uppercase font-mono">
-                                    {{ $book->location->name ?? '-' }}
-                                </span>
-                            </div>
-                        @endif
 
                         <div class="flex items-center justify-between py-1 border-b border-neutral-border/60">
-                            <span class="text-neutral-muted">Taksiran Nilai Buku:</span>
-                            <span class="font-bold text-neutral-dark">
-                                Rp {{ number_format($book->price ?? 0, 0, ',', '.') }}
-                            </span>
+                            <span class="text-neutral-muted">Stok Tersedia (Available):</span>
+                            <div>
+                                <span class="font-extrabold font-mono text-base {{ $book->available_stock > 0 ? 'text-success' : 'text-danger' }}">{{ $book->available_stock }}</span>
+                                <span class="text-neutral-muted font-mono">/ {{ $book->stock }}</span>
+                            </div>
                         </div>
 
-                        <div class="py-1">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-neutral-muted">Skema Ganti Rugi:</span>
-                                <span class="font-semibold text-neutral-dark capitalize">
-                                    @if($book->fine_type === 'fixed')
-                                        Tetap (Harga Asli)
-                                    @elseif($book->fine_type === 'multiplier')
-                                        Kelipatan ({{ $book->fine_value }})
-                                    @else
-                                        Manual
-                                    @endif
+                        <div class="flex items-center justify-between py-1 border-b border-neutral-border/60">
+                            <span class="text-neutral-muted">Status Eksemplar:</span>
+                            @if($book->available_stock > 0)
+                                <span class="px-2 py-0.5 text-[10px] font-bold bg-[#EDF7ED] text-success border border-[#C8E6C9] rounded">
+                                    Tersedia Dipesan
                                 </span>
-                            </div>
-                            <p class="text-[11px] text-neutral-muted italic">
-                                @if($book->fine_type === 'multiplier')
-                                    * Denda dihitung: {{ $book->fine_value }} × Rp {{ number_format($book->price ?? 0, 0, ',', '.') }}
-                                @elseif($book->fine_type === 'fixed')
-                                    * Denda senilai 1x taksiran harga buku (Rp {{ number_format($book->price ?? 0, 0, ',', '.') }})
-                                @else
-                                    * Denda nominal khusus: Rp {{ number_format((float) preg_replace('/[^0-9.]/', '', $book->fine_value), 0, ',', '.') }}
-                                @endif
-                            </p>
+                            @elseif($book->stock > 0)
+                                <span class="px-2 py-0.5 text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300 rounded">
+                                    🔒 RESERVED / DIPINJAM
+                                </span>
+                            @else
+                                <span class="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 text-neutral-body rounded">
+                                    Digital Saja
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center justify-between py-1 border-b border-neutral-border/60">
+                            <span class="text-neutral-muted">Lokasi Rak Simpan:</span>
+                            <span class="font-semibold text-neutral-dark uppercase font-mono">
+                                {{ $book->location->name ?? '-' }}
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Digital PDF Card -->
-                @if($book->hasDigital())
-                    <div class="p-4 bg-primary-light/60 rounded-lg border border-red-200 space-y-3">
-                        <div class="flex items-center space-x-2">
-                            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <h4 class="text-xs font-bold text-neutral-dark uppercase tracking-wider">Naskah Digital Aktif</h4>
-                        </div>
-                        <p class="text-xs text-neutral-body">
-                            Berkas dokumen PDF naskah tersimpan di server dan siap diakses via pembaca digital.
-                        </p>
-                        <a href="{{ route('admin.books.reader', $book) }}" target="_blank" class="w-full btn-editorial text-xs py-2 px-4 uppercase tracking-wider text-center block">
-                            Buka Digital Reader (PDF)
-                        </a>
+                <!-- Active Reservations Card -->
+                <div class="bg-white p-5 rounded-lg border border-neutral-border shadow-xs space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-neutral-border">
+                        <h3 class="text-xs font-bold text-neutral-dark uppercase tracking-wider">
+                            Reservasi Aktif ({{ count($activeReservations ?? []) }})
+                        </h3>
                     </div>
-                @endif
+
+                    <div class="space-y-3">
+                        @forelse($activeReservations ?? [] as $detail)
+                            @php $loan = $detail->loan; @endphp
+                            @if($loan)
+                                <div class="p-3 bg-neutral-surface border border-neutral-border rounded text-xs space-y-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-mono font-bold text-primary">{{ $loan->loan_code }}</span>
+                                        @if($loan->isPending())
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Menunggu Persetujuan</span>
+                                        @elseif($loan->isApproved())
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300">Disetujui (Pickup)</span>
+                                        @elseif($loan->isBorrowed())
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">Dipinjam</span>
+                                        @endif
+                                    </div>
+
+                                    <p class="font-bold text-neutral-dark">{{ $loan->user->name ?? 'Anggota' }}</p>
+
+                                    @if($loan->pickup_deadline && ($loan->isPending() || $loan->isApproved()))
+                                        <p class="text-[10px] text-red-600 font-semibold">
+                                            Batas Pickup: {{ $loan->pickup_deadline->format('d M Y H:i') }}
+                                        </p>
+                                    @endif
+
+                                    <div class="pt-1 text-right">
+                                        <a href="{{ route('admin.loans.show', $loan) }}" class="text-[10px] font-bold text-primary hover:underline">
+                                            Kelola Transaksi &rarr;
+                                        </a>
+                                    </div>
+                                </div>
+                            @endif
+                        @empty
+                            <p class="text-xs text-neutral-muted italic py-2">Tidak ada reservasi aktif saat ini.</p>
+                        @endforelse
+                    </div>
+                </div>
             </div>
 
             <!-- Right Column: Bibliographic Details & Circulation History (8 cols) -->
@@ -272,16 +223,6 @@
                             <span class="text-neutral-muted uppercase tracking-wider block font-semibold text-[10px] mb-1">Tahun Terbit</span>
                             <span class="text-xs font-semibold text-neutral-dark block">{{ $book->year ?? '-' }}</span>
                         </div>
-
-                        <div>
-                            <span class="text-neutral-muted uppercase tracking-wider block font-semibold text-[10px] mb-1">Bahasa Pengantar</span>
-                            <span class="text-xs font-semibold text-neutral-dark block">{{ $book->language ?? 'Indonesia' }}</span>
-                        </div>
-
-                        <div>
-                            <span class="text-neutral-muted uppercase tracking-wider block font-semibold text-[10px] mb-1">Jumlah Halaman</span>
-                            <span class="text-xs font-semibold text-neutral-dark block">{{ $book->page_count ? $book->page_count . ' Halaman' : '-' }}</span>
-                        </div>
                     </div>
 
                     <!-- Synopsis / Description -->
@@ -320,7 +261,6 @@
                                     <th class="px-6 py-3">Tgl Pinjam</th>
                                     <th class="px-6 py-3">Tenggat</th>
                                     <th class="px-6 py-3">Status</th>
-                                    <th class="px-6 py-3">Kondisi Pengembalian</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-neutral-border">
@@ -338,40 +278,26 @@
                                                 </span>
                                             </td>
                                             <td class="px-6 py-3.5 whitespace-nowrap text-neutral-body">
-                                                {{ $loan->loan_date ? $loan->loan_date->format('d/m/Y') : '-' }}
+                                                {{ $loan->created_at->format('d/m/Y H:i') }}
                                             </td>
                                             <td class="px-6 py-3.5 whitespace-nowrap text-neutral-body font-mono">
                                                 {{ $loan->due_date ? $loan->due_date->format('d/m/Y') : '-' }}
                                             </td>
                                             <td class="px-6 py-3.5 whitespace-nowrap">
-                                                @if($loan->status === 'borrowed')
-                                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-light border border-red-200 px-2 py-0.5 rounded">
-                                                        Dipinjam
-                                                    </span>
-                                                @else
-                                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-success bg-[#EDF7ED] border border-[#C8E6C9] px-2 py-0.5 rounded">
-                                                        Selesai
-                                                    </span>
-                                                @endif
-                                            </td>
-                                            <td class="px-6 py-3.5 whitespace-nowrap text-neutral-body">
-                                                @if($loan->returnBook)
-                                                    <span class="capitalize font-semibold text-neutral-dark">
-                                                        @if($loan->isDigital())
-                                                            Kembali (Digital)
-                                                        @else
-                                                            {{ $loan->returnBook->condition === 'good' ? 'Baik' : ($loan->returnBook->condition === 'damaged' ? 'Rusak' : 'Hilang') }}
-                                                        @endif
-                                                    </span>
-                                                @else
-                                                    <span class="text-neutral-muted italic">-</span>
-                                                @endif
+                                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border
+                                                    @if($loan->isPending()) bg-amber-100 text-amber-900 border-amber-300
+                                                    @elseif($loan->isApproved()) bg-blue-100 text-blue-900 border-blue-300
+                                                    @elseif($loan->isBorrowed()) bg-emerald-100 text-emerald-900 border-emerald-300
+                                                    @elseif($loan->isReturned()) bg-slate-100 text-slate-800 border-slate-300
+                                                    @else bg-red-100 text-red-900 border-red-300 @endif">
+                                                    {{ $loan->status_label }}
+                                                </span>
                                             </td>
                                         </tr>
                                     @endif
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="px-6 py-8 text-center text-xs text-neutral-muted italic">
+                                        <td colspan="5" class="px-6 py-8 text-center text-xs text-neutral-muted italic">
                                             Belum ada catatan sirkulasi peminjaman untuk buku ini.
                                         </td>
                                     </tr>

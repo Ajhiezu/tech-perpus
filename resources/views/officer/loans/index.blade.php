@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        Daftar Sirkulasi Peminjaman
+        Daftar Sirkulasi Peminjaman & Reservasi — RPK PUSTAKA
     </x-slot>
 
     <x-slot name="actions">
@@ -11,6 +11,49 @@
     </x-slot>
 
     <div class="space-y-6 animate-in fade-in duration-300">
+        <!-- Summary Cards for Quick Filters -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <a href="{{ route('admin.loans.index', ['status' => 'pending']) }}" 
+               class="p-4 rounded-lg border shadow-xs transition-all {{ request('status') === 'pending' ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400' : 'bg-white border-neutral-border hover:border-amber-300' }}">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Menunggu Persetujuan</span>
+                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                </div>
+                <span class="font-sans text-2xl font-extrabold text-amber-900 block mt-1">{{ $summary['pending'] ?? 0 }}</span>
+                <span class="text-[10px] text-amber-700 block mt-0.5">Reservasi baru perlu verifikasi</span>
+            </a>
+
+            <a href="{{ route('admin.loans.index', ['status' => 'approved']) }}" 
+               class="p-4 rounded-lg border shadow-xs transition-all {{ request('status') === 'approved' ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-400' : 'bg-white border-neutral-border hover:border-blue-300' }}">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Siap Pickup / Disetujui</span>
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                </div>
+                <span class="font-sans text-2xl font-extrabold text-blue-900 block mt-1">{{ $summary['approved'] ?? 0 }}</span>
+                <span class="text-[10px] text-blue-700 block mt-0.5">Menunggu diambil anggota</span>
+            </a>
+
+            <a href="{{ route('admin.loans.index', ['status' => 'borrowed']) }}" 
+               class="p-4 rounded-lg border shadow-xs transition-all {{ request('status') === 'borrowed' ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400' : 'bg-white border-neutral-border hover:border-emerald-300' }}">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Sedang Dipinjam</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                </div>
+                <span class="font-sans text-2xl font-extrabold text-emerald-900 block mt-1">{{ $summary['borrowed'] ?? 0 }}</span>
+                <span class="text-[10px] text-emerald-700 block mt-0.5">Fisik di tangan anggota</span>
+            </a>
+
+            <a href="{{ route('admin.loans.index', ['status' => 'overdue']) }}" 
+               class="p-4 rounded-lg border shadow-xs transition-all {{ request('status') === 'overdue' ? 'bg-red-50 border-red-300 ring-2 ring-red-400' : 'bg-white border-neutral-border hover:border-red-300' }}">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-red-800 uppercase tracking-wider">Terlambat Pinjam</span>
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                </div>
+                <span class="font-sans text-2xl font-extrabold text-red-900 block mt-1">{{ $summary['overdue'] ?? 0 }}</span>
+                <span class="text-[10px] text-red-700 block mt-0.5">Lewat batas due date</span>
+            </a>
+        </div>
+
         <!-- Filter Toolbar -->
         <div class="bg-white p-4 rounded-lg border border-neutral-border shadow-xs">
             <form action="{{ route('admin.loans.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
@@ -21,51 +64,43 @@
                         <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari kode sirkulasi, peminjam, atau judul buku..." 
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari kode transaksi, peminjam, atau judul buku..." 
                             class="w-full pl-9 pr-3 py-2 bg-neutral-surface border border-neutral-border rounded-md text-sm text-neutral-dark placeholder:text-neutral-muted focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs transition-all">
                     </div>
                 </div>
 
                 <!-- Status Filter Dropdown -->
-                <div class="md:col-span-2 space-y-1.5">
-                    <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Status Pinjam</label>
+                <div class="md:col-span-3 space-y-1.5">
+                    <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Status Transaksi</label>
                     <select name="status" 
                         class="w-full px-3 py-2 bg-neutral-surface border border-neutral-border rounded-md text-sm text-neutral-dark focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs">
                         <option value="">Semua Status</option>
-                        <option value="borrowed" {{ request('status') == 'borrowed' ? 'selected' : '' }}>Dipinjam (Aktif)</option>
-                        <option value="returned" {{ request('status') == 'returned' ? 'selected' : '' }}>Telah Kembali</option>
-                        <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Terlambat</option>
-                        <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
+                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Menunggu Persetujuan (Pending)</option>
+                        <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Disetujui (Menunggu Pengambilan)</option>
+                        <option value="borrowed" {{ request('status') == 'borrowed' ? 'selected' : '' }}>Sedang Dipinjam (Borrowed)</option>
+                        <option value="returned" {{ request('status') == 'returned' ? 'selected' : '' }}>Telah Kembali (Returned)</option>
+                        <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Terlambat (Overdue)</option>
+                        <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Ditolak (Rejected)</option>
+                        <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Dibatalkan (Cancelled)</option>
+                        <option value="expired" {{ request('status') == 'expired' ? 'selected' : '' }}>Kedaluwarsa (Expired)</option>
                     </select>
                 </div>
 
                 <!-- Jenis Filter Dropdown -->
                 <div class="md:col-span-2 space-y-1.5">
-                    <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Jenis</label>
+                    <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Jenis Koleksi</label>
                     <select name="type" 
                         class="w-full px-3 py-2 bg-neutral-surface border border-neutral-border rounded-md text-sm text-neutral-dark focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs">
                         <option value="">Semua Jenis</option>
-                        <option value="digital" {{ request('type') == 'digital' ? 'selected' : '' }}>Digital</option>
-                        <option value="physical" {{ request('type') == 'physical' ? 'selected' : '' }}>Fisik</option>
+                        <option value="physical" {{ request('type') == 'physical' ? 'selected' : '' }}>Buku Fisik</option>
+                        <option value="digital" {{ request('type') == 'digital' ? 'selected' : '' }}>Buku Digital</option>
                     </select>
                 </div>
 
                 <!-- Denda Filter Dropdown -->
-                <div class="md:col-span-2 space-y-1.5">
-                    <label class="text-[11px] font-semibold text-neutral-dark uppercase tracking-wider block px-0.5">Status Denda</label>
-                    <select name="fine_status" 
-                        class="w-full px-3 py-2 bg-neutral-surface border border-neutral-border rounded-md text-sm text-neutral-dark focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs">
-                        <option value="">Semua Denda</option>
-                        <option value="unpaid" {{ request('fine_status') == 'unpaid' ? 'selected' : '' }}>Belum Lunas ⚠️</option>
-                        <option value="paid" {{ request('fine_status') == 'paid' ? 'selected' : '' }}>Denda Lunas ✓</option>
-                        <option value="no_fine" {{ request('fine_status') == 'no_fine' ? 'selected' : '' }}>Bebas Denda</option>
-                    </select>
-                </div>
-
-                <!-- Actions -->
-                <div class="md:col-span-2 flex space-x-2">
+                <div class="md:col-span-3 flex space-x-2">
                     <x-button type="submit" variant="primary" class="flex-1 text-xs uppercase tracking-wider font-semibold py-2">
-                        Filter
+                        Filter Data
                     </x-button>
                     @if(request('search') || request('status') || request('type') || request('fine_status'))
                         <a href="{{ route('admin.loans.index') }}" class="btn-editorial-outline text-xs uppercase tracking-wider font-semibold py-2 px-3">
@@ -77,7 +112,7 @@
         </div>
 
         <!-- Table View -->
-        <x-table :headers="['KODE & ANGGOTA', 'JENIS', 'KOLEKSI BUKU', 'TENGGAT', 'STATUS', 'DENDA', 'AKSI']">
+        <x-table :headers="['KODE & PEMINJAM', 'JENIS', 'KOLEKSI BUKU', 'BATAS MAKSIMAL / TENGGAT', 'STATUS SANITY', 'DENDA', 'AKSI']">
             @forelse($loans as $loan)
                 <tr class="hover:bg-[#F8F8F7] transition-colors">
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -104,18 +139,47 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-xs text-neutral-body">
-                        <span class="font-medium text-neutral-dark block">{{ \Carbon\Carbon::parse($loan->due_date)->format('d M Y') }}</span>
-                        @if($loan->status === 'borrowed')
-                            <span class="text-[10px] text-neutral-muted">{{ ceil(now()->diffInDays($loan->due_date, false)) }} hari tersisa</span>
+                        @if(($loan->isPending() || $loan->isApproved()) && $loan->pickup_deadline)
+                            <span class="font-bold text-primary block">{{ $loan->pickup_deadline->format('d M Y, H:i') }}</span>
+                            <span class="text-[10px] text-amber-700">Pickup Deadline</span>
+                        @else
+                            <span class="font-medium text-neutral-dark block">{{ \Carbon\Carbon::parse($loan->due_date)->format('d M Y') }}</span>
+                            @if($loan->status === 'borrowed')
+                                <span class="text-[10px] text-neutral-muted">{{ ceil(now()->diffInDays($loan->due_date, false)) }} hari tersisa</span>
+                            @endif
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        @if($loan->status === 'borrowed')
-                            <x-badge variant="primary">Dipinjam</x-badge>
+                        @if($loan->isPending())
+                            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 rounded">
+                                🔒 Pending Reservasi
+                            </span>
+                        @elseif($loan->isApproved())
+                            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300 rounded">
+                                ✓ Disetujui (Siap Pickup)
+                            </span>
+                        @elseif($loan->status === 'borrowed')
+                            @if(\Carbon\Carbon::parse($loan->due_date)->isPast())
+                                <x-badge variant="rose">Terlambat Pinjam</x-badge>
+                            @else
+                                <x-badge variant="primary">Sedang Dipinjam</x-badge>
+                            @endif
                         @elseif($loan->status === 'returned')
-                            <x-badge variant="emerald">Kembali</x-badge>
+                            <x-badge variant="emerald">Telah Kembali</x-badge>
+                        @elseif($loan->isCancelled())
+                            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-red-50 text-red-700 border border-red-200 rounded">
+                                Dibatalkan
+                            </span>
+                        @elseif($loan->isRejected())
+                            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-red-50 text-red-700 border border-red-200 rounded">
+                                Ditolak
+                            </span>
+                        @elseif($loan->isExpiredState())
+                            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-700 border border-gray-300 rounded">
+                                Kedaluwarsa
+                            </span>
                         @else
-                            <x-badge variant="rose">Terlambat</x-badge>
+                            <x-badge variant="rose">{{ ucfirst($loan->status) }}</x-badge>
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -145,7 +209,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right">
                         <a href="{{ route('admin.loans.show', $loan) }}" class="btn-editorial-outline text-xs py-1.5 px-3 uppercase tracking-wider font-semibold">
-                            Kelola Transaksi &rarr;
+                            Kelola &rarr;
                         </a>
                     </td>
                 </tr>

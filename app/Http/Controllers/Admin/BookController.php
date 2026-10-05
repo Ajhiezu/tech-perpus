@@ -199,13 +199,22 @@ class BookController extends Controller
     public function show(Book $book)
     {
         $book->load(['category', 'location']);
+
         $recentLoans = $book->loanDetails()
             ->with(['loan.user', 'loan.returnBook'])
             ->latest()
             ->take(10)
             ->get();
 
-        return view('admin.books.show', compact('book', 'recentLoans'));
+        $activeReservations = $book->loanDetails()
+            ->whereHas('loan', function ($q) {
+                $q->whereIn('status', ['pending', 'approved', 'borrowed', 'overdue']);
+            })
+            ->with(['loan.user'])
+            ->latest()
+            ->get();
+
+        return view('admin.books.show', compact('book', 'recentLoans', 'activeReservations'));
     }
 
     public function edit(Book $book)
@@ -333,6 +342,24 @@ class BookController extends Controller
             $finalImagePath = 'books/' . basename($tempImage);
             Storage::disk('public')->move($tempImage, $finalImagePath);
             $validated['image'] = $finalImagePath;
+        } elseif ($request->filled('auto_pdf_cover') && str_starts_with($request->input('auto_pdf_cover'), 'data:image')) {
+            try {
+                $parts = explode(',', $request->input('auto_pdf_cover'), 2);
+                if (isset($parts[1])) {
+                    $decoded = base64_decode($parts[1]);
+                    if ($decoded !== false) {
+                        if ($book->image && Storage::disk('public')->exists($book->image)) {
+                            Storage::disk('public')->delete($book->image);
+                        }
+                        $ext = str_contains($parts[0], 'image/webp') ? 'webp' : 'jpg';
+                        $autoCoverPath = 'books/cover_auto_' . uniqid() . '.' . $ext;
+                        Storage::disk('public')->put($autoCoverPath, $decoded);
+                        $validated['image'] = $autoCoverPath;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Auto cover save failed during update: ' . $e->getMessage());
+            }
         }
 
         // Explicit PDF removal: only when admin explicitly chooses 'remove_pdf'

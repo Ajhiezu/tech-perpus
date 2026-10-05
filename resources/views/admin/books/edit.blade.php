@@ -338,7 +338,8 @@
 
                         <div class="pt-2">
                             <label class="block text-xs font-semibold text-neutral-dark mb-1">Unggah Berkas PDF Baru / Pengganti:</label>
-                            <input type="file" name="pdf_file" accept=".pdf" class="w-full text-xs text-neutral-dark file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark cursor-pointer bg-white p-2 border border-neutral-border rounded">
+                            <input type="file" name="pdf_file" id="pdf_file_input" accept=".pdf" onchange="renderPdfCoverPreview(this)" class="w-full text-xs text-neutral-dark file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark cursor-pointer bg-white p-2 border border-neutral-border rounded">
+                            <input type="hidden" name="auto_pdf_cover" id="auto_pdf_cover">
                             <x-input-error :messages="$errors->get('pdf_file')" class="mt-1" />
                         </div>
                     </div>
@@ -440,6 +441,45 @@
                 const customNominal = parseFloat(fineVal.replace(/[^0-9.]/g, '')) || 0;
                 if (hint) {
                     hint.innerHTML = '<span class="text-primary font-semibold">Denda Manual:</span> Nominal ganti rugi ditetapkan khusus ' + formatRupiah(customNominal) + '.';
+                }
+            }
+        }
+
+        async function renderPdfCoverPreview(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const imageInput = document.getElementById('image_input');
+            if (imageInput && imageInput.files && imageInput.files.length > 0) return;
+
+            let attempts = 0;
+            while (typeof window.renderPdfFirstPage !== 'function' && attempts < 30) {
+                await new Promise(r => setTimeout(r, 100));
+                attempts++;
+            }
+
+            if (typeof window.renderPdfFirstPage === 'function') {
+                try {
+                    const res = await window.renderPdfFirstPage(file, 10000);
+                    if (res.success && res.imageBase64) {
+                        const autoCoverInput = document.getElementById('auto_pdf_cover');
+                        const previewImg = document.getElementById('cover_preview');
+                        const wrapper = document.getElementById('cover_preview_wrapper');
+                        const badge = document.getElementById('cover_badge');
+                        const display = document.getElementById('filename_display');
+                        if (autoCoverInput) autoCoverInput.value = res.imageBase64;
+                        if (previewImg) previewImg.src = res.imageBase64;
+                        if (wrapper) wrapper.classList.remove('hidden');
+                        if (badge) {
+                            badge.innerText = 'Sampul Otomatis (PDF Page 1)';
+                            badge.className = 'absolute bottom-0 inset-x-0 bg-primary/90 text-[9px] text-white text-center py-0.5 font-semibold';
+                        }
+                        if (display && (!imageInput || !imageInput.files || imageInput.files.length === 0)) {
+                            display.innerText = 'Sampul Otomatis Generasi PDF (Halaman 1)';
+                            display.className = 'text-[10px] text-primary font-bold tracking-wider uppercase mt-0.5';
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Manual edit PDF cover render failed:', e);
                 }
             }
         }

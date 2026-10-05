@@ -27,10 +27,15 @@ class LoanController extends Controller
             $query->where('loan_type', $request->type);
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         $loans = $query->latest()->paginate(10)->withQueryString();
 
         return view('member.loans.index', compact('loans'));
     }
+
     public function store(Request $request)
     {
         $digitalDuration = (int) \App\Models\Setting::get('digital_loan_duration_days', 7);
@@ -60,7 +65,7 @@ class LoanController extends Controller
                 if ($book->hasDigital()) {
                     return redirect()->back()->with('error', 'Buku fisik tidak tersedia. Versi digital tersedia dan dapat dipinjam untuk dibaca melalui website.');
                 }
-                return redirect()->back()->with('error', 'Buku sedang tidak tersedia.');
+                return redirect()->back()->with('error', 'Stok sedang tidak tersedia.');
             }
             $dueDate = $request->due_date ?: now()->addDays($physicalDuration);
         }
@@ -78,12 +83,42 @@ class LoanController extends Controller
                     ->with('success', 'Peminjaman digital berhasil diaktifkan! Anda dapat langsung membaca buku di bawah ini.');
             }
 
-            return redirect()->route('anggota.loans.index')
-                ->with('success', 'Peminjaman fisik berhasil diajukan! Silakan ambil buku fisik di perpustakaan.');
+            return redirect()->route('anggota.loans.show', $loan)
+                ->with('success', 'Reservasi peminjaman fisik berhasil! Buku telah di-reserve untuk Anda. Silakan tunjukkan bukti peminjaman ini di perpustakaan.');
         } catch (\DomainException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal memproses peminjaman: ' . $e->getMessage());
+        }
+    }
+
+    public function show(Loan $loan)
+    {
+        // Authorization check: member can only view their own loan
+        if ($loan->user_id !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses ke bukti peminjaman ini.');
+        }
+
+        $loan->load(['user', 'loanDetails.book.location', 'returnBook', 'fine']);
+
+        return view('member.loans.show', compact('loan'));
+    }
+
+    public function cancel(Loan $loan)
+    {
+        // Authorization check
+        if ($loan->user_id !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk membatalkan reservasi ini.');
+        }
+
+        try {
+            $this->libraryService->cancelReservation($loan);
+            return redirect()->route('anggota.loans.show', $loan)
+                ->with('success', 'Reservasi peminjaman berhasil dibatalkan. Stok buku telah dilepas.');
+        } catch (\DomainException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal membatalkan reservasi: ' . $e->getMessage());
         }
     }
 }

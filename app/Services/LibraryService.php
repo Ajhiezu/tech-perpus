@@ -7,6 +7,7 @@ use App\Models\Loan;
 use App\Models\LoanDetail;
 use App\Models\ReturnBook;
 use App\Models\Fine;
+use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 class LibraryService
 {
     /**
-     * Create a loan transaction (physical or digital).
+     * Create a loan reservation (physical) or active digital loan.
      *
      * @param array $data
      * @return Loan
@@ -24,14 +25,14 @@ class LibraryService
     {
         return DB::transaction(function () use ($data) {
             $loanType = $data['loan_type'] ?? 'physical';
-            $dueDate = $data['due_date'] ?? now()->addDays(7);
+            $dueDate = isset($data['due_date']) ? Carbon::parse($data['due_date']) : now()->addDays(14);
             $userId = $data['user_id'];
-            $bookIds = $data['book_ids'];
+            $bookIds = (array) $data['book_ids'];
 
-            // 1. Prevent duplicate active loan for the same book and same loan type
+            // 1. Prevent duplicate active loan or reservation for the same book and type
             $existingActiveLoan = Loan::where('user_id', $userId)
                 ->where('loan_type', $loanType)
-                ->where('status', 'borrowed')
+                ->whereIn('status', ['pending', 'approved', 'borrowed'])
                 ->whereHas('loanDetails', function ($q) use ($bookIds) {
                     $q->whereIn('book_id', $bookIds);
                 })
@@ -39,17 +40,17 @@ class LibraryService
 
             if ($existingActiveLoan) {
                 $formatName = $loanType === 'digital' ? 'versi digital' : 'buku fisik';
-                throw new \DomainException("Anda masih memiliki peminjaman aktif untuk {$formatName} buku ini.");
+                throw new \DomainException("Anda masih memiliki reservasi atau peminjaman aktif untuk {$formatName} buku ini.");
             }
 
-            // 2. Validate availability and handle concurrency
+            // 2. Validate availability with row locking for concurrency protection
             $booksToLoan = [];
             foreach ($bookIds as $bookId) {
                 if ($loanType === 'physical') {
                     // Lock the book row to prevent race conditions on remaining stock
                     $book = Book::where('id', $bookId)->lockForUpdate()->firstOrFail();
                     if ($book->available_stock <= 0) {
-                        throw new \DomainException("Buku fisik '{$book->title}' tidak tersedia saat ini. Silakan periksa versi digital jika tersedia.");
+                        throw new \DomainException("Buku fisik '{$book->title}' tidak tersedia untuk dipesan saat ini.");
                     }
                     $booksToLoan[] = $book;
                 } else {
@@ -62,18 +63,38 @@ class LibraryService
                 }
             }
 
-            // 3. Create Loan Record
+            // 3. Determine Expiry Deadline and Unique Stable Loan Code
+            $expiryHours = (int) (Setting::where('key', 'physical_reservation_expiry_hours')->value('value') ?? 24);
+            $initialStatus = $data['status'] ?? ($loanType === 'physical' ? 'pending' : 'borrowed');
+            $pickupDeadline = ($loanType === 'physical' && $initialStatus === 'pending') ? now()->addHours($expiryHours) : null;
+            $approvedAt = in_array($initialStatus, ['approved', 'borrowed']) ? now() : null;
+            $borrowedAt = $initialStatus === 'borrowed' ? now() : null;
+
+            $datePrefix = date('Ymd');
+            $todayCount = Loan::whereDate('created_at', now()->toDateString())->count() + 1;
+            $loanCode = 'RPK-LOAN-' . $datePrefix . '-' . sprintf('%03d', $todayCount);
+
+            // Ensure loan_code uniqueness
+            while (Loan::where('loan_code', $loanCode)->exists()) {
+                $todayCount++;
+                $loanCode = 'RPK-LOAN-' . $datePrefix . '-' . sprintf('%03d', $todayCount);
+            }
+
+            // 4. Create Loan Record
             $loan = Loan::create([
                 'user_id' => $userId,
-                'loan_code' => 'LN-' . strtoupper(Str::random(8)),
+                'loan_code' => $loanCode,
                 'loan_type' => $loanType,
                 'loan_date' => now(),
                 'due_date' => $dueDate,
-                'status' => 'borrowed',
+                'pickup_deadline' => $pickupDeadline,
+                'approved_at' => $approvedAt,
+                'borrowed_at' => $borrowedAt,
+                'status' => $initialStatus,
                 'total_books' => count($bookIds),
             ]);
 
-            // 4. Attach Loan Details & decrement stock ONLY if physical
+            // 5. Attach Loan Details & decrement stock IMMEDIATELY upon physical reservation
             foreach ($booksToLoan as $book) {
                 LoanDetail::create([
                     'loan_id' => $loan->id,
@@ -90,6 +111,171 @@ class LibraryService
     }
 
     /**
+     * Admin approves a pending physical reservation.
+     * Available stock DOES NOT CHANGE (already reserved).
+     */
+    public function approveReservation(Loan $loan): Loan
+    {
+        return DB::transaction(function () use ($loan) {
+            $loanRecord = Loan::where('id', $loan->id)->lockForUpdate()->firstOrFail();
+
+            if ($loanRecord->status !== 'pending') {
+                throw new \DomainException("Hanya peminjaman berstatus 'Menunggu Persetujuan' yang dapat disetujui.", 422);
+            }
+
+            $loanRecord->update([
+                'status' => 'approved',
+                'approved_at' => now(),
+            ]);
+
+            return $loanRecord;
+        });
+    }
+
+    /**
+     * Admin marks approved reservation as handed over (borrowed).
+     * Available stock DOES NOT CHANGE.
+     */
+    public function handoverLoan(Loan $loan): Loan
+    {
+        return DB::transaction(function () use ($loan) {
+            $loanRecord = Loan::where('id', $loan->id)->lockForUpdate()->firstOrFail();
+
+            if (!in_array($loanRecord->status, ['approved', 'pending'])) {
+                throw new \DomainException("Transaksi tidak dalam status yang valid untuk penyerahan naskah fisik.", 422);
+            }
+
+            $loanRecord->update([
+                'status' => 'borrowed',
+                'approved_at' => $loanRecord->approved_at ?? now(),
+                'borrowed_at' => now(),
+            ]);
+
+            return $loanRecord;
+        });
+    }
+
+    /**
+     * Admin rejects a pending reservation.
+     * Restores available stock (+1 per book).
+     */
+    public function rejectReservation(Loan $loan, ?string $reason = null): Loan
+    {
+        return DB::transaction(function () use ($loan, $reason) {
+            $loanRecord = Loan::where('id', $loan->id)->lockForUpdate()->firstOrFail();
+
+            if ($loanRecord->status !== 'pending') {
+                throw new \DomainException("Hanya reservasi berstatus 'Menunggu Persetujuan' yang dapat ditolak.", 422);
+            }
+
+            $loanRecord->update([
+                'status' => 'rejected',
+                'rejection_reason' => $reason,
+            ]);
+
+            if ($loanRecord->isPhysical()) {
+                foreach ($loanRecord->loanDetails as $detail) {
+                    $book = Book::where('id', $detail->book_id)->lockForUpdate()->first();
+                    if ($book) {
+                        $book->increment('available_stock');
+                    }
+                }
+            }
+
+            return $loanRecord;
+        });
+    }
+
+    /**
+     * Member cancels their own pending reservation.
+     * Restores available stock (+1 per book).
+     */
+    public function cancelReservation(Loan $loan, ?int $userId = null): Loan
+    {
+        return DB::transaction(function () use ($loan, $userId) {
+            $loanRecord = Loan::where('id', $loan->id)->lockForUpdate()->firstOrFail();
+
+            if ($userId !== null && $loanRecord->user_id !== $userId) {
+                throw new \DomainException("Anda tidak berhak membatalkan transaksi peminjaman ini.", 403);
+            }
+
+            if ($loanRecord->status !== 'pending') {
+                throw new \DomainException("Hanya peminjaman berstatus 'Menunggu Persetujuan' yang dapat dibatalkan oleh anggota.", 422);
+            }
+
+            $loanRecord->update([
+                'status' => 'cancelled',
+            ]);
+
+            if ($loanRecord->isPhysical()) {
+                foreach ($loanRecord->loanDetails as $detail) {
+                    $book = Book::where('id', $detail->book_id)->lockForUpdate()->first();
+                    if ($book) {
+                        $book->increment('available_stock');
+                    }
+                }
+            }
+
+            return $loanRecord;
+        });
+    }
+
+    /**
+     * Expire a single pending reservation past its pickup deadline.
+     * Restores available stock (+1 per book). Idempotent.
+     */
+    public function expireReservation(Loan $loan): bool
+    {
+        return DB::transaction(function () use ($loan) {
+            $loanRecord = Loan::where('id', $loan->id)->lockForUpdate()->firstOrFail();
+
+            if ($loanRecord->status !== 'pending') {
+                return false;
+            }
+
+            if ($loanRecord->pickup_deadline && now()->lt($loanRecord->pickup_deadline)) {
+                return false;
+            }
+
+            $loanRecord->update([
+                'status' => 'expired',
+            ]);
+
+            if ($loanRecord->isPhysical()) {
+                foreach ($loanRecord->loanDetails as $detail) {
+                    $book = Book::where('id', $detail->book_id)->lockForUpdate()->first();
+                    if ($book) {
+                        $book->increment('available_stock');
+                    }
+                }
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * Automatically expire all unclaimed physical reservations past deadline.
+     */
+    public function expireAllOverdueReservations(): int
+    {
+        $expiredCount = 0;
+        $overdueLoans = Loan::where('status', 'pending')
+            ->where('loan_type', 'physical')
+            ->whereNotNull('pickup_deadline')
+            ->where('pickup_deadline', '<', now())
+            ->get();
+
+        foreach ($overdueLoans as $loan) {
+            if ($this->expireReservation($loan)) {
+                $expiredCount++;
+            }
+        }
+
+        return $expiredCount;
+    }
+
+    /**
      * Process return of a loan.
      * Prevents double return exploit and handles physical vs digital returns.
      *
@@ -101,23 +287,28 @@ class LibraryService
     public function processReturn(Loan $loan, array $data)
     {
         return DB::transaction(function () use ($loan, $data) {
-            // Guard against Double Return exploit
-            if ($loan->status === 'returned') {
+            $loanRecord = Loan::where('id', $loan->id)->lockForUpdate()->firstOrFail();
+
+            if ($loanRecord->status === 'returned') {
                 throw new \DomainException('Peminjaman ini sudah dikembalikan sebelumnya.');
             }
 
+            if (!in_array($loanRecord->status, ['borrowed', 'overdue', 'approved'])) {
+                throw new \DomainException('Transaksi tidak dalam status yang valid untuk diproses pengembaliannya.', 422);
+            }
+
             $returnBook = ReturnBook::create([
-                'loan_id' => $loan->id,
+                'loan_id' => $loanRecord->id,
                 'return_date' => now(),
                 'condition' => $data['condition'] ?? 'good',
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            $loan->update(['status' => 'returned']);
+            $loanRecord->update(['status' => 'returned']);
 
             // Increase physical stock ONLY if loan was physical and condition is good
-            if ($loan->isPhysical() && ($data['condition'] ?? 'good') === 'good') {
-                foreach ($loan->loanDetails as $detail) {
+            if ($loanRecord->isPhysical() && ($data['condition'] ?? 'good') === 'good') {
+                foreach ($loanRecord->loanDetails as $detail) {
                     $book = Book::where('id', $detail->book_id)->lockForUpdate()->first();
                     if ($book) {
                         $book->increment('available_stock');
@@ -126,8 +317,8 @@ class LibraryService
             }
 
             // Calculate fines only for physical loans
-            if ($loan->isPhysical()) {
-                $this->calculateFine($loan, $returnBook);
+            if ($loanRecord->isPhysical()) {
+                $this->calculateFine($loanRecord, $returnBook);
             }
 
             return $returnBook;
@@ -144,7 +335,7 @@ class LibraryService
 
         // 1. Late Fine
         if ($returnDate->greaterThan($dueDate)) {
-            $lateFinePerDay = \App\Models\Setting::where('key', 'late_fine_per_day')->value('value') ?? 1000;
+            $lateFinePerDay = Setting::where('key', 'late_fine_per_day')->value('value') ?? 1000;
             $days = $returnDate->diffInDays($dueDate);
             $amount = $days * $lateFinePerDay;
             $amount = min($amount, 10000000); // Cap fine at 10M
@@ -197,11 +388,6 @@ class LibraryService
 
     /**
      * Mark a fine as paid with payment date.
-     *
-     * @param Fine $fine
-     * @param array $data
-     * @return Fine
-     * @throws \DomainException
      */
     public function payFine(Fine $fine, array $data = [])
     {
@@ -215,30 +401,5 @@ class LibraryService
         ]);
 
         return $fine;
-    }
-
-    /**
-     * Cancel unclaimed physical loans older than 2 days.
-     */
-    public function cancelUnclaimedLoans()
-    {
-        $unclaimed = Loan::where('status', 'borrowed')
-            ->where('loan_type', 'physical')
-            ->where('created_at', '<', now()->subDays(2))
-            ->get();
-
-        return DB::transaction(function () use ($unclaimed) {
-            foreach ($unclaimed as $loan) {
-                $loan->update(['status' => 'cancelled']);
-
-                foreach ($loan->loanDetails as $detail) {
-                    $book = Book::where('id', $detail->book_id)->lockForUpdate()->first();
-                    if ($book) {
-                        $book->increment('available_stock');
-                    }
-                }
-            }
-            return $unclaimed->count();
-        });
     }
 }

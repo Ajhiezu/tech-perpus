@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        Detail Sirkulasi Peminjaman
+        Detail Sirkulasi Peminjaman & Reservasi
     </x-slot>
 
     <x-slot name="actions">
@@ -28,19 +28,39 @@
                         Sirkulasi Pinjaman <span class="text-neutral-muted font-mono text-lg font-normal">#{{ $loan->loan_code }}</span>
                     </h2>
                     
-                    @if($loan->status === 'borrowed')
+                    @if($loan->isPending())
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 rounded">
+                            🔒 Menunggu Persetujuan (Pending)
+                        </span>
+                    @elseif($loan->isApproved())
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-blue-50 text-blue-900 border border-blue-300 rounded">
+                            ✓ Disetujui (Menunggu Pengambilan)
+                        </span>
+                    @elseif($loan->isBorrowed())
                         @if($loan->isExpired() || \Carbon\Carbon::parse($loan->due_date)->isPast())
                             <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-red-50 text-danger border border-red-200 rounded">
                                 Terlambat Pengembalian
                             </span>
                         @else
-                            <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-primary-light text-primary border border-red-200 rounded">
+                            <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-300 rounded">
                                 Aktif Dipinjam
                             </span>
                         @endif
-                    @elseif($loan->status === 'returned')
+                    @elseif($loan->isReturned())
                         <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-[#EDF7ED] text-success border border-[#C8E6C9] rounded">
                             Selesai Dikembalikan
+                        </span>
+                    @elseif($loan->isCancelled())
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-red-50 text-red-800 border border-red-200 rounded">
+                            ✕ Dibatalkan Anggota
+                        </span>
+                    @elseif($loan->isRejected())
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-red-50 text-red-800 border border-red-200 rounded">
+                            ✕ Ditolak Petugas
+                        </span>
+                    @elseif($loan->isExpiredState())
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-gray-100 text-gray-800 border border-gray-300 rounded">
+                            ⏱️ Kedaluwarsa
                         </span>
                     @else
                         <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold bg-red-50 text-danger border border-red-200 rounded">
@@ -62,16 +82,25 @@
 
             <div class="flex flex-wrap items-center gap-4 text-xs font-mono text-neutral-muted pt-3 lg:pt-0 border-t lg:border-t-0 border-neutral-border">
                 <div>
-                    <span class="text-neutral-muted block text-[10px] uppercase tracking-wider">Tanggal Pinjam</span>
-                    <span class="font-bold text-neutral-dark">{{ \Carbon\Carbon::parse($loan->loan_date)->format('d M Y') }}</span>
+                    <span class="text-neutral-muted block text-[10px] uppercase tracking-wider">Tanggal Pengajuan</span>
+                    <span class="font-bold text-neutral-dark">{{ \Carbon\Carbon::parse($loan->created_at)->format('d M Y H:i') }}</span>
                 </div>
                 <div class="w-px h-6 bg-neutral-border hidden sm:block"></div>
-                <div>
-                    <span class="text-neutral-muted block text-[10px] uppercase tracking-wider">Batas Tenggat</span>
-                    <span class="font-bold {{ \Carbon\Carbon::parse($loan->due_date)->isPast() && $loan->status === 'borrowed' ? 'text-danger' : 'text-neutral-dark' }}">
-                        {{ \Carbon\Carbon::parse($loan->due_date)->format('d M Y') }}
-                    </span>
-                </div>
+                @if($loan->pickup_deadline && ($loan->isPending() || $loan->isApproved()))
+                    <div>
+                        <span class="text-red-600 block text-[10px] uppercase tracking-wider font-bold">Batas Pengambilan</span>
+                        <span class="font-bold text-primary">
+                            {{ $loan->pickup_deadline->format('d M Y, H:i') }}
+                        </span>
+                    </div>
+                @else
+                    <div>
+                        <span class="text-neutral-muted block text-[10px] uppercase tracking-wider">Batas Tenggat</span>
+                        <span class="font-bold {{ \Carbon\Carbon::parse($loan->due_date)->isPast() && $loan->status === 'borrowed' ? 'text-danger' : 'text-neutral-dark' }}">
+                            {{ \Carbon\Carbon::parse($loan->due_date)->format('d M Y') }}
+                        </span>
+                    </div>
+                @endif
                 <div class="w-px h-6 bg-neutral-border hidden sm:block"></div>
                 <div>
                     <span class="text-neutral-muted block text-[10px] uppercase tracking-wider">Total Koleksi</span>
@@ -79,6 +108,74 @@
                 </div>
             </div>
         </div>
+
+        <!-- Admin Action Bar for Pending & Approved Statuses -->
+        @if($loan->isPending())
+            <div class="bg-amber-50 border-2 border-amber-300 p-5 rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4" x-data="{ showRejectModal: false }">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">AKSI ADMIN — VERIFIKASI RESERVASI PENDING</span>
+                    <h3 class="font-sans text-base font-bold text-amber-950">Permohonan Reservasi Buku Fisik Membutuhkan Persetujuan Admin</h3>
+                    <p class="text-xs text-amber-900">Stok fisik telah otomatis di-lock (berkurang 1 kuota) saat reservasi dibuat. Menyetujui tidak akan memotong stok lagi.</p>
+                </div>
+
+                <div class="flex items-center gap-3 shrink-0">
+                    <!-- Approve Button -->
+                    <form action="{{ route('admin.loans.approve', $loan) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded font-bold text-xs uppercase tracking-wider shadow-xs transition-colors flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Setujui Reservasi
+                        </button>
+                    </form>
+
+                    <!-- Reject Button Trigger Modal -->
+                    <button type="button" @click="showRejectModal = true" class="px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-800 border border-red-300 rounded font-bold text-xs uppercase tracking-wider transition-colors">
+                        Tolak Reservasi
+                    </button>
+                </div>
+
+                <!-- Reject Modal -->
+                <div x-show="showRejectModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center bg-black/50 p-4">
+                    <div class="bg-white rounded-lg max-w-md w-full p-6 space-y-4 border border-neutral-border shadow-lg" @click.outside="showRejectModal = false">
+                        <h4 class="font-sans text-base font-bold text-neutral-dark">Tolak Reservasi Peminjaman</h4>
+                        <p class="text-xs text-neutral-body">Stok buku fisik akan dilepas kembali ke rak perpustakaan. Masukkan alasan penolakan untuk anggota:</p>
+
+                        <form action="{{ route('admin.loans.reject', $loan) }}" method="POST" class="space-y-4">
+                            @csrf
+                            <div>
+                                <label class="block text-xs font-bold text-neutral-dark uppercase tracking-wider mb-1">Alasan Penolakan</label>
+                                <textarea name="rejection_reason" rows="3" required class="w-full text-xs p-3 border border-neutral-border rounded focus:ring-primary focus:border-primary" placeholder="Contoh: Buku sedang dalam proses perawatan fisik / inventarisasi."></textarea>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-2 pt-2">
+                                <button type="button" @click="showRejectModal = false" class="px-4 py-2 text-xs font-semibold text-neutral-body bg-neutral-100 rounded hover:bg-neutral-200">
+                                    Batal
+                                </button>
+                                <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-red-700 hover:bg-red-800 rounded uppercase tracking-wider">
+                                    Konfirmasi Penolakan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @elseif($loan->isApproved())
+            <div class="bg-blue-50 border-2 border-blue-300 p-5 rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 block">AKSI ADMIN — SERAH TERIMA BUKU FISIK</span>
+                    <h3 class="font-sans text-base font-bold text-blue-950">Reservasi Disetujui. Anggota Datang Mengambil Buku</h3>
+                    <p class="text-xs text-blue-900">Verifikasi Kode Bukti: <strong class="font-mono text-primary">{{ $loan->loan_code }}</strong>. Klik tombol saat fisik buku diserahkan kepada Anggota.</p>
+                </div>
+
+                <form action="{{ route('admin.loans.handover', $loan) }}" method="POST" class="shrink-0">
+                    @csrf
+                    <button type="submit" class="px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white rounded font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Tandai Buku Diserahkan (Handover)
+                    </button>
+                </form>
+            </div>
+        @endif
 
         <!-- 2 Column Main Grid -->
         <div class="grid lg:grid-cols-3 gap-6" x-data="{ condition: 'good' }">
@@ -92,7 +189,7 @@
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-primary"></span>
                             <h3 class="text-xs font-bold text-neutral-dark uppercase tracking-wider">
-                                Koleksi Buku Terpinjam ({{ count($loan->loanDetails) }})
+                                Koleksi Buku Terpinjam / Reservasi ({{ count($loan->loanDetails) }})
                             </h3>
                         </div>
                         <span class="text-xs text-neutral-muted font-mono">Kode: {{ $loan->loan_code }}</span>
@@ -166,7 +263,7 @@
                     </div>
                 </div>
 
-                @if($loan->status === 'borrowed')
+                @if($loan->isBorrowed() || $loan->isOverdue())
                 <!-- Return Processing Form Card -->
                 <div class="bg-white border border-neutral-border rounded-lg overflow-hidden shadow-xs">
                     <div class="px-6 py-4 border-b border-neutral-border bg-[#F8F8F7] flex items-center justify-between">
@@ -185,7 +282,6 @@
                         @csrf
 
                         @if($loan->isDigital())
-                            <!-- Digital Loan Return Notice -->
                             <input type="hidden" name="condition" value="good">
                             <div class="p-4 rounded-lg bg-[#FFF9ED] border border-[#FDE68A] text-neutral-dark text-xs leading-relaxed flex items-start gap-3 shadow-xs">
                                 <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#B45309] shrink-0 border border-[#FDE68A]">
@@ -193,11 +289,10 @@
                                 </div>
                                 <div class="flex-1">
                                     <span class="font-bold text-[#B45309] block text-sm mb-0.5">Peminjaman Naskah Digital</span>
-                                    <span>Pengembalian naskah digital dicatat secara otomatis oleh sistem tanpa verifikasi kondisi fisik (bebas dari kriteria denda kerusakan/kehilangan fisik).</span>
+                                    <span>Pengembalian naskah digital dicatat secara otomatis oleh sistem tanpa verifikasi kondisi fisik.</span>
                                 </div>
                             </div>
                         @else
-                            <!-- Physical Loan Condition Selection -->
                             <div>
                                 <div class="flex items-center justify-between mb-3">
                                     <label class="block text-xs font-bold text-neutral-dark uppercase tracking-wider">
@@ -263,8 +358,7 @@
 
                                         <div class="mt-4 pt-3 border-t border-neutral-border/70 flex items-center gap-1.5 text-xs">
                                             <span class="inline-flex items-center gap-1.5 text-amber-800 font-semibold text-[11px]">
-                                                <svg class="w-3.5 h-3.5 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                                Ganti Rugi / Denda 100% Harga Buku
+                                                Ganti Rugi 100% Harga Buku
                                             </span>
                                         </div>
                                     </label>
@@ -294,32 +388,10 @@
 
                                         <div class="mt-4 pt-3 border-t border-neutral-border/70 flex items-center gap-1.5 text-xs">
                                             <span class="inline-flex items-center gap-1.5 text-primary font-semibold text-[11px]">
-                                                <svg class="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                                 Ganti Rugi 100% Harga Buku
                                             </span>
                                         </div>
                                     </label>
-                                </div>
-
-                                <!-- Clear Explanatory Notice -->
-                                <div class="mt-4 px-4 py-3 rounded-md bg-[#F8F8F7] border border-neutral-border text-xs leading-relaxed flex items-start gap-2.5">
-                                    <span class="w-2 h-2 rounded-full shrink-0 mt-1"
-                                          :class="{
-                                              'bg-emerald-600': condition === 'good',
-                                              'bg-accent': condition === 'damaged',
-                                              'bg-primary': condition === 'lost'
-                                          }"></span>
-                                    <div class="flex-1 text-neutral-body">
-                                        <span x-show="condition === 'good'">
-                                            <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi diverifikasi dalam kondisi prima. Kuota fisik buku di rak akan otomatis dipulihkan (<strong class="text-emerald-700">+1 stok tersedia</strong>) dan tidak dikenakan denda fisik.
-                                        </span>
-                                        <span x-show="condition === 'damaged'">
-                                            <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi mengalami cacat fisik. Stok di rak tidak akan bertambah sebelum diperbaiki, dan sistem otomatis membukukan denda kerusakan fisik (sama dengan denda buku hilang / 100% harga buku).
-                                        </span>
-                                        <span x-show="condition === 'lost'">
-                                            <strong class="text-neutral-dark">Konsekuensi Sirkulasi:</strong> Koleksi dinyatakan hilang. Eksemplar dihapus dari peredaran dan peminjam diwajibkan membayar denda penggantian 100% harga buku.
-                                        </span>
-                                    </div>
                                 </div>
                             </div>
                         @endif
@@ -328,7 +400,7 @@
                             <label for="notes" class="block text-xs font-bold text-neutral-dark uppercase tracking-wider mb-2">
                                 {{ $loan->isDigital() ? 'Catatan Pengembalian (Opsional)' : 'Catatan Pemeriksaan Fisik (Opsional)' }}
                             </label>
-                            <textarea id="notes" name="notes" rows="3" class="w-full bg-[#F8F8F7] border border-neutral-border text-neutral-dark text-sm p-3 rounded-md focus:outline-none focus:border-primary focus:bg-white transition-colors" placeholder="{{ $loan->isDigital() ? 'Catat keterangan tambahan untuk pengembalian digital ini...' : 'Catat detail kondisi buku jika terdapat halaman terlipat, coretan, atau catatan sanksi penggantian...' }}"></textarea>
+                            <textarea id="notes" name="notes" rows="3" class="w-full bg-[#F8F8F7] border border-neutral-border text-neutral-dark text-sm p-3 rounded-md focus:outline-none focus:border-primary focus:bg-white transition-colors" placeholder="Catat keteragan pengembalian..."></textarea>
                         </div>
 
                         <div class="pt-4 border-t border-neutral-border flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -341,63 +413,61 @@
                         </div>
                     </form>
                 </div>
-                @else
-                <!-- Detail Info if Returned -->
-                <div class="bg-white border border-neutral-border p-6 sm:p-8 rounded-lg shadow-xs">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-full bg-[#EDF7ED] border border-[#C8E6C9] flex items-center justify-center text-success flex-shrink-0">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-mono uppercase tracking-wider text-success font-bold">Status Transaksi Selesai</span>
-                            </div>
-                            <h3 class="text-lg sm:text-xl font-bold text-neutral-dark">
-                                {{ $loan->isDigital() ? 'Naskah Digital Telah Resmi Dikembalikan' : 'Koleksi Fisik Telah Resmi Dikembalikan' }}
-                            </h3>
-                            <p class="text-xs text-neutral-body leading-relaxed">
-                                Transaksi pinjaman ini telah diselesaikan dan dicatat pada <span class="font-bold text-neutral-dark">{{ \Carbon\Carbon::parse($loan->returnBook->return_date ?? $loan->updated_at)->format('d F Y') }}</span>.
-                            </p>
-                            
-                            @if($loan->returnBook)
-                                <div class="mt-4 pt-3 border-t border-neutral-border grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                    <div class="bg-[#F8F8F7] p-3 rounded border border-neutral-border">
-                                        <span class="text-neutral-muted block text-[10px] uppercase font-mono tracking-wider mb-0.5">
-                                            {{ $loan->isDigital() ? 'Format Peminjaman' : 'Kondisi Diterima' }}
-                                        </span>
-                                        <span class="font-bold text-neutral-dark uppercase">
-                                            @if($loan->isDigital())
-                                                Dikembalikan (Digital)
-                                            @elseif($loan->returnBook->condition === 'good')
-                                                Kondisi Baik (Stok Dipulihkan)
-                                            @elseif($loan->returnBook->condition === 'damaged')
-                                                Buku Rusak (Dikenakan Denda)
-                                            @elseif($loan->returnBook->condition === 'lost')
-                                                Buku Hilang (Ganti Rugi)
-                                            @else
-                                                {{ ucfirst($loan->returnBook->condition ?? '-') }}
-                                            @endif
-                                        </span>
-                                    </div>
-                                    @if($loan->returnBook->notes)
-                                        <div class="bg-[#F8F8F7] p-3 rounded border border-neutral-border sm:col-span-2">
-                                            <span class="text-neutral-muted block text-[10px] uppercase font-mono tracking-wider mb-0.5">Catatan Petugas</span>
-                                            <p class="text-neutral-dark">{{ $loan->returnBook->notes }}</p>
-                                        </div>
-                                    @endif
-                                </div>
-                            @endif
-                        </div>
+                @elseif($loan->isPending())
+                <!-- Detail Info if Pending -->
+                <div class="bg-amber-50 border-2 border-amber-300 p-6 rounded-lg shadow-xs space-y-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        <h3 class="text-sm font-bold text-amber-950 uppercase tracking-wider">Status Transaksi: {{ $loan->status_label }}</h3>
                     </div>
+                    <p class="text-xs text-amber-900 leading-relaxed">
+                        🔒 Stok fisik buku ini telah dikunci (reserved) secara otomatis untuk peminjam. Menunggu persetujuan Admin atau serah terima di perpustakaan.
+                    </p>
+                </div>
+                @elseif($loan->isApproved())
+                <!-- Detail Info if Approved -->
+                <div class="bg-blue-50 border-2 border-blue-300 p-6 rounded-lg shadow-xs space-y-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                        <h3 class="text-sm font-bold text-blue-950 uppercase tracking-wider">Status Transaksi: {{ $loan->status_label }}</h3>
+                    </div>
+                    <p class="text-xs text-blue-900 leading-relaxed">
+                        ✓ Reservasi telah disetujui Admin. Buku fisik siap diserahkan saat Anggota datang ke perpustakaan.
+                    </p>
+                </div>
+                @elseif($loan->isReturned())
+                <!-- Detail Info if Returned -->
+                <div class="bg-white border border-neutral-border p-6 rounded-lg shadow-xs space-y-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                        <h3 class="text-sm font-bold text-neutral-dark uppercase tracking-wider">Status Transaksi: Dikembalikan</h3>
+                    </div>
+                    <p class="text-xs text-neutral-body">Buku telah resmi dikembalikan ke perpustakaan. Stok fisik telah dipulihkan kembali ke rak.</p>
+                </div>
+                @else
+                <!-- Detail Info if Rejected/Cancelled/Expired -->
+                <div class="bg-white border border-neutral-border p-6 rounded-lg shadow-xs space-y-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                        <h3 class="text-sm font-bold text-neutral-dark uppercase tracking-wider">Status Transaksi: {{ $loan->status_label }}</h3>
+                    </div>
+                    <p class="text-xs text-neutral-body">
+                        @if($loan->isCancelled())
+                            Reservasi dibatalkan oleh Anggota. Stok fisik telah dilepas kembali ke perpustakaan.
+                        @elseif($loan->isRejected())
+                            Reservasi ditolak oleh Petugas. @if($loan->rejection_reason) Alasan: <strong>{{ $loan->rejection_reason }}</strong> @endif
+                        @elseif($loan->isExpiredState())
+                            Reservasi kedaluwarsa karena batas waktu pengambilan (pickup deadline) telah terlewati. Stok fisik telah dilepas kembali.
+                        @else
+                            Status transaksi: {{ $loan->status_label }}.
+                        @endif
+                    </p>
                 </div>
                 @endif
             </div>
 
             <!-- Right Sidebar Column (1 Col) -->
             <div class="space-y-6">
-                
                 <!-- Member Information Card -->
                 <div class="bg-white border border-neutral-border rounded-lg overflow-hidden shadow-xs">
                     <div class="px-6 py-4 border-b border-neutral-border bg-[#F8F8F7] flex items-center justify-between">
@@ -430,12 +500,6 @@
                                 <dt class="text-neutral-muted">Nomor Kontak / WA</dt>
                                 <dd class="font-mono text-neutral-dark font-medium">{{ $loan->user->phone ?? '-' }}</dd>
                             </div>
-                            <div class="py-1">
-                                <dt class="text-neutral-muted mb-1.5">Alamat Korespondensi</dt>
-                                <dd class="text-neutral-dark leading-relaxed bg-[#F8F8F7] p-3 border border-neutral-border rounded text-xs">
-                                    {{ $loan->user->address ?? 'Belum ada alamat terdaftar dalam profil anggota.' }}
-                                </dd>
-                            </div>
                         </dl>
                     </div>
                 </div>
@@ -446,7 +510,7 @@
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-primary"></span>
                             <h3 class="text-xs font-bold text-neutral-dark uppercase tracking-wider">
-                                Jadwal & Timeline
+                                Timeline & Deadlines
                             </h3>
                         </div>
                         <span class="text-xs font-mono text-neutral-muted">Timeline</span>
@@ -454,53 +518,44 @@
 
                     <div class="p-6 space-y-4 text-xs">
                         <div class="flex items-center justify-between py-1.5 border-b border-neutral-border">
-                            <span class="text-neutral-muted">Tanggal Pinjam</span>
+                            <span class="text-neutral-muted">Pengajuan Reservasi</span>
                             <span class="font-mono text-neutral-dark font-bold">
-                                {{ \Carbon\Carbon::parse($loan->loan_date)->format('d M Y') }}
+                                {{ \Carbon\Carbon::parse($loan->created_at)->format('d M Y H:i') }}
                             </span>
                         </div>
 
-                        <div class="flex items-center justify-between py-1.5 border-b border-neutral-border">
-                            <span class="text-neutral-muted">Batas Waktu Tenggat</span>
-                            <div class="text-right">
-                                <span class="font-mono font-bold {{ \Carbon\Carbon::parse($loan->due_date)->isPast() && $loan->status === 'borrowed' ? 'text-danger' : 'text-neutral-dark' }}">
-                                    {{ \Carbon\Carbon::parse($loan->due_date)->format('d M Y') }}
+                        @if($loan->pickup_deadline)
+                            <div class="flex items-center justify-between py-1.5 border-b border-neutral-border">
+                                <span class="text-red-600 font-bold">Batas Pengambilan</span>
+                                <span class="font-mono text-primary font-bold">
+                                    {{ $loan->pickup_deadline->format('d M Y H:i') }}
                                 </span>
-                                @if(\Carbon\Carbon::parse($loan->due_date)->isPast() && $loan->status === 'borrowed')
-                                    <span class="text-[10px] text-danger uppercase tracking-wider font-mono block">(Terlambat)</span>
-                                @endif
                             </div>
-                        </div>
-
-                        @if($loan->returnBook)
-                        <div class="flex items-center justify-between py-1.5 border-b border-neutral-border">
-                            <span class="text-neutral-muted">Tanggal Dikembalikan</span>
-                            <span class="font-mono text-success font-bold">
-                                {{ \Carbon\Carbon::parse($loan->returnBook->return_date)->format('d M Y') }}
-                            </span>
-                        </div>
                         @endif
 
-                        <div class="pt-2">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[10px] font-mono text-neutral-muted uppercase tracking-wider">Sisa Masa Pinjam</span>
-                                @if($loan->status === 'returned')
-                                    <span class="text-[10px] font-mono text-success font-bold uppercase">Selesai</span>
-                                @elseif(\Carbon\Carbon::parse($loan->due_date)->isPast())
-                                    <span class="text-[10px] font-mono text-danger font-bold uppercase">Terlambat {{ abs(ceil(now()->diffInDays($loan->due_date, false))) }} Hari</span>
-                                @else
-                                    <span class="text-[10px] font-mono text-primary font-bold uppercase">{{ ceil(now()->diffInDays($loan->due_date, false)) }} Hari Tersisa</span>
-                                @endif
+                        @if($loan->approved_at)
+                            <div class="flex items-center justify-between py-1.5 border-b border-neutral-border">
+                                <span class="text-neutral-muted">Disetujui Admin</span>
+                                <span class="font-mono text-blue-700 font-bold">
+                                    {{ \Carbon\Carbon::parse($loan->approved_at)->format('d M Y H:i') }}
+                                </span>
                             </div>
-                            <div class="w-full bg-[#F8F8F7] rounded-full h-1.5 border border-neutral-border overflow-hidden">
-                                @if($loan->status === 'returned')
-                                    <div class="bg-success h-full w-full"></div>
-                                @elseif(\Carbon\Carbon::parse($loan->due_date)->isPast())
-                                    <div class="bg-danger h-full w-full"></div>
-                                @else
-                                    <div class="bg-primary h-full w-1/2"></div>
-                                @endif
+                        @endif
+
+                        @if($loan->borrowed_at)
+                            <div class="flex items-center justify-between py-1.5 border-b border-neutral-border">
+                                <span class="text-neutral-muted">Penyerahan Buku</span>
+                                <span class="font-mono text-emerald-700 font-bold">
+                                    {{ \Carbon\Carbon::parse($loan->borrowed_at)->format('d M Y H:i') }}
+                                </span>
                             </div>
+                        @endif
+
+                        <div class="flex items-center justify-between py-1.5 border-b border-neutral-border">
+                            <span class="text-neutral-muted">Tenggat Due Date</span>
+                            <span class="font-mono text-neutral-dark font-bold">
+                                {{ \Carbon\Carbon::parse($loan->due_date)->format('d M Y') }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -516,7 +571,7 @@
                         </div>
                         @if($loan->fine && $loan->fine->amount > 0)
                             <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded {{ ($loan->fine->status ?? '') === 'paid' ? 'bg-[#EDF7ED] text-success border border-[#C8E6C9]' : 'bg-red-50 text-danger border border-red-200' }}">
-                                {{ ($loan->fine->status ?? '') === 'paid' ? 'Lunas' : 'Tertunda' }}
+                                {{ ($loan->fine->status ?? '') === 'paid' ? 'Lunas' : 'Belum Lunas' }}
                             </span>
                         @else
                             <template x-if="condition === 'good'">
@@ -585,9 +640,7 @@
                                     <h4 class="text-xs font-bold text-neutral-dark uppercase tracking-wider mb-2.5">
                                         Formulir Penerimaan Denda
                                     </h4>
-                                    <form action="{{ route('admin.loans.payFine', $loan) }}" method="POST" class="space-y-3"
-                                          data-confirm-message="Konfirmasi penerimaan pembayaran denda sebesar Rp {{ number_format($loan->fine->amount, 0, ',', '.') }} dari {{ $loan->user->name }}?"
-                                          data-confirm-title="Konfirmasi Pelunasan Denda">
+                                    <form action="{{ route('admin.loans.payFine', $loan) }}" method="POST" class="space-y-3">
                                         @csrf
                                         <div>
                                             <label class="block text-[10px] uppercase font-mono text-neutral-muted mb-1">
@@ -596,7 +649,7 @@
                                             <input type="date" name="payment_date" value="{{ now()->toDateString() }}" required
                                                    class="w-full px-3 py-2 bg-[#F8F8F7] border border-neutral-border rounded text-xs text-neutral-dark focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                                         </div>
-                                        <button type="submit" class="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded font-bold text-xs uppercase tracking-wider shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <button type="submit" onclick="return confirm('Konfirmasi penerimaan pembayaran denda sebesar Rp {{ number_format($loan->fine->amount, 0, ',', '.') }} dari {{ $loan->user->name }}?');" class="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded font-bold text-xs uppercase tracking-wider shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
@@ -606,22 +659,12 @@
                                 </div>
                             @endif
                         @else
-                            <div x-show="condition === 'good'" class="text-xs text-neutral-muted mt-3 pt-3 border-t border-neutral-border">
+                            <p class="text-[11px] text-neutral-muted mt-2 italic">
                                 Transaksi sirkulasi ini bebas dari beban denda keterlambatan maupun denda kerusakan fisik.
-                            </div>
-                            <div x-show="condition !== 'good'" x-cloak class="text-xs text-danger font-medium mt-3 pt-3 border-t border-neutral-border space-y-1.5">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-neutral-muted font-normal">Kategori Denda:</span>
-                                    <span class="font-bold uppercase font-mono text-primary" x-text="condition === 'damaged' ? 'Kerusakan Fisik (100%)' : 'Penggantian Hilang (100%)'"></span>
-                                </div>
-                                <p class="text-[11px] text-neutral-body pt-1 leading-relaxed">
-                                    Denda penggantian sebesar <strong class="text-danger">Rp {{ number_format($estimatedFine ?? 0, 0, ',', '.') }}</strong> (100% harga koleksi) akan otomatis dibukukan saat Anda memproses tombol konfirmasi pengembalian.
-                                </p>
-                            </div>
+                            </p>
                         @endif
                     </div>
                 </div>
-
             </div>
         </div>
     </div>

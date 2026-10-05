@@ -78,6 +78,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('members/import/template', [AdminMemberImportController::class, 'downloadTemplate'])->name('members.import.template');
 
         // Sirkulasi Peminjaman & Pengembalian (Digital + Fisik)
+        Route::post('loans/{loan}/approve', [OfficerLoanController::class, 'approve'])->name('loans.approve');
+        Route::post('loans/{loan}/reject', [OfficerLoanController::class, 'reject'])->name('loans.reject');
+        Route::post('loans/{loan}/handover', [OfficerLoanController::class, 'handover'])->name('loans.handover');
         Route::post('loans/{loan}/return', [OfficerLoanController::class, 'returnBook'])->name('loans.returnBook');
         Route::post('loans/{loan}/pay-fine', [OfficerLoanController::class, 'payFine'])->name('loans.payFine');
         Route::resource('loans', OfficerLoanController::class);
@@ -118,9 +121,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('books/{book}/reader', [AnggotaReaderController::class, 'reader'])->name('books.reader');
         Route::get('books/{book}/stream', [AnggotaReaderController::class, 'stream'])->name('books.stream');
 
-        // Pengajuan Peminjaman (Digital & Fisik)
+        // Pengajuan Peminjaman (Digital & Fisik) & Reservasi
         Route::post('loans', [AnggotaLoanController::class, 'store'])->name('loans.store');
         Route::get('my-loans', [AnggotaLoanController::class, 'index'])->name('loans.index');
+        Route::get('loans/{loan}', [AnggotaLoanController::class, 'show'])->name('loans.show');
+        Route::post('loans/{loan}/cancel', [AnggotaLoanController::class, 'cancel'])->name('loans.cancel');
 
         // Artikel Terbit
         Route::get('articles', [AnggotaArticleController::class, 'index'])->name('articles.index');
@@ -146,6 +151,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('books/{book}/stream', [AnggotaReaderController::class, 'stream'])->name('books.stream');
         Route::post('loans', [AnggotaLoanController::class, 'store'])->name('loans.store');
         Route::get('my-loans', [AnggotaLoanController::class, 'index'])->name('loans.index');
+        Route::get('loans/{loan}', [AnggotaLoanController::class, 'show'])->name('loans.show');
+        Route::post('loans/{loan}/cancel', [AnggotaLoanController::class, 'cancel'])->name('loans.cancel');
         Route::get('articles', [AnggotaArticleController::class, 'index'])->name('articles.index');
         Route::get('articles/{article:slug}', [AnggotaArticleController::class, 'show'])->name('articles.show');
         Route::get('essays', [AnggotaEssayController::class, 'index'])->name('essays.index');

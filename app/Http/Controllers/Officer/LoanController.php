@@ -20,6 +20,9 @@ class LoanController extends Controller
 
     public function index(Request $request)
     {
+        // Trigger auto-expiry check on index view so stale pending reservations are updated
+        $this->libraryService->expireAllOverdueReservations();
+
         $query = Loan::with(['user', 'loanDetails.book', 'fine']);
 
         if ($request->filled('search')) {
@@ -56,7 +59,16 @@ class LoanController extends Controller
         }
 
         $loans = $query->latest()->paginate(10)->withQueryString();
-        return view('officer.loans.index', compact('loans'));
+
+        // Summary counts for dashboard badges
+        $summary = [
+            'pending'   => Loan::where('status', Loan::STATUS_PENDING)->count(),
+            'approved'  => Loan::where('status', Loan::STATUS_APPROVED)->count(),
+            'borrowed'  => Loan::where('status', Loan::STATUS_BORROWED)->count(),
+            'overdue'   => Loan::where('status', Loan::STATUS_OVERDUE)->count(),
+        ];
+
+        return view('officer.loans.index', compact('loans', 'summary'));
     }
 
     public function create()
@@ -87,10 +99,11 @@ class LoanController extends Controller
         try {
             $data = $request->all();
             $data['loan_type'] = $request->input('loan_type', 'physical');
+            $data['status'] = Loan::STATUS_BORROWED;
 
             $this->libraryService->createLoan($data);
 
-            return redirect()->route('admin.loans.index')->with('success', 'Peminjaman berhasil dicatat!');
+            return redirect()->route('admin.loans.index')->with('success', 'Peminjaman berhasil dicatat dengan status Sedang Dipinjam!');
         } catch (\DomainException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         } catch (\Exception $e) {
@@ -100,7 +113,7 @@ class LoanController extends Controller
 
     public function show(Loan $loan)
     {
-        $loan->load(['user', 'loanDetails.book', 'returnBook', 'fine']);
+        $loan->load(['user', 'loanDetails.book.location', 'returnBook', 'fine']);
 
         $estimatedFine = (float) $loan->loanDetails->sum(function ($detail) {
             $book = $detail->book;
@@ -120,6 +133,50 @@ class LoanController extends Controller
         });
 
         return view('officer.loans.show', compact('loan', 'estimatedFine'));
+    }
+
+    public function approve(Loan $loan)
+    {
+        try {
+            $this->libraryService->approveReservation($loan);
+            return redirect()->route('admin.loans.show', $loan)
+                ->with('success', 'Reservasi peminjaman berhasil disetujui! Menunggu anggota mengambil buku.');
+        } catch (\DomainException $e) {
+            return redirect()->route('admin.loans.show', $loan)->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('admin.loans.show', $loan)->with('error', 'Gagal menyetujui reservasi: ' . $e->getMessage());
+        }
+    }
+
+    public function reject(Request $request, Loan $loan)
+    {
+        $request->validate([
+            'rejection_reason' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $reason = $request->input('rejection_reason', 'Penolakan oleh admin/petugas.');
+            $this->libraryService->rejectReservation($loan, $reason);
+            return redirect()->route('admin.loans.show', $loan)
+                ->with('success', 'Reservasi peminjaman ditolak. Stok fisik buku telah dilepas kembali.');
+        } catch (\DomainException $e) {
+            return redirect()->route('admin.loans.show', $loan)->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('admin.loans.show', $loan)->with('error', 'Gagal menolak reservasi: ' . $e->getMessage());
+        }
+    }
+
+    public function handover(Loan $loan)
+    {
+        try {
+            $this->libraryService->handoverLoan($loan);
+            return redirect()->route('admin.loans.show', $loan)
+                ->with('success', 'Buku fisik telah berhasil diserahkan kepada Anggota! Status peminjaman aktif (borrowed).');
+        } catch (\DomainException $e) {
+            return redirect()->route('admin.loans.show', $loan)->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('admin.loans.show', $loan)->with('error', 'Gagal memproses penyerahan buku: ' . $e->getMessage());
+        }
     }
 
     public function returnBook(Request $request, Loan $loan)
